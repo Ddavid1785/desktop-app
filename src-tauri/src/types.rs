@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Task {
     pub text: String,
+    pub colour: String,
     pub completed: bool,
     pub id: String,
 }
@@ -12,6 +13,7 @@ pub struct Task {
 pub struct TaskFolder {
     pub id: String,
     pub name: String,
+    pub colour: String,
     pub visible: bool,
     pub tasks: Vec<Task>,
 }

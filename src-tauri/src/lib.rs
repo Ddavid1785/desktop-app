@@ -98,10 +98,11 @@ fn fetch_task_data() -> Result<TaskData, String> {
 }
 
 #[command]
-fn create_folder(folder_name: String, folder_id: String) -> Result<(), String> {
+fn create_folder(folder_name: String, folder_id: String,folder_color:String) -> Result<(), String> {
     let folder = TaskFolder {
         name: folder_name,
         id: folder_id,
+        colour: folder_color,
         visible: true,
         tasks: Vec::new(),
     };
