@@ -38,16 +38,14 @@ export interface TaskDataHandlers {
   toggleTaskCompletion: (taskId: string, folderId: string) => void;
   deleteTask: (taskId: string, folderId: string) => void;
   addTask: (taskInput: Omit<Task, "id">, folderId: string) => void;
-  renameTask: (taskId: string, folderId: string) => void;
-  chooseTaskColor: (taskId: string) => void;
+  editTask: (taskId: string, folderId: string) => void;
   duplicateTask: (taskId: string, folderId: string) => void;
   
   // Folder-specific operations
   addFolder: (folderName: string, folderColor: string) => void;
   deleteFolder: (folderId: string) => void;
   toggleFolderVisibility: (folderId: string) => void;
-  renameFolder: (folderId: string) => void;
-  chooseFolderColor: (folderId: string) => void;
+  editFolder: (folderId: string) => void;
   duplicateFolder: (folderId: string) => void;
 
   // Cross-cutting operations

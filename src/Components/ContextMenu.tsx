@@ -144,7 +144,7 @@ export default function ContextMenu({
 
     // If the task is currently in a folder, add the "Ungrouped Tasks" option
     // (A task in a folder can be moved to ungrouped)
-    if (data?.folderId) {
+    if (data?.folderId && data.folderId !== "ungrouped") {
       folderOptions.push({
         id: "ungrouped", // Use "ungrouped" to represent the ungrouped state
         name: "Ungrouped Tasks",
@@ -183,19 +183,12 @@ export default function ContextMenu({
             handlers.toggleTaskCompletion(data.taskId!, data.folderId || "ungrouped"),
         },
         {
-          id: "rename",
-          text: "Rename Task",
+          id: "edit",
+          text: "Edit Task",
           icon: Edit,
           textColor: "text-blue-400",
-          onClick: () => handlers.renameTask(data.taskId!, data.folderId || "ungrouped"),
-        },
-        {
-          id: "choose-color",
-          text: "Choose Color",
-          icon: Palette,
-          textColor: "text-indigo-400",
-          onClick: () => handlers.chooseTaskColor(data.taskId!),
-        },
+          onClick: () => handlers.editTask(data.taskId!, data.folderId || "ungrouped"),
+        },  
         {
           id: "duplicate",
           text: "Duplicate Task",
@@ -230,18 +223,11 @@ export default function ContextMenu({
           onClick: () => handlers.toggleFolderVisibility(data.folderId!),
         },
         {
-          id: "rename",
-          text: "Rename Folder",
+          id: "edit",
+          text: "Edit Folder",
           icon: Edit,
           textColor: "text-blue-400",
-          onClick: () => handlers.renameFolder(data.folderId!),
-        },
-        {
-          id: "choose-color",
-          text: "Choose Color",
-          icon: Palette,
-          textColor: "text-indigo-400",
-          onClick: () => handlers.chooseFolderColor(data.folderId!),
+          onClick: () => handlers.editFolder(data.folderId!),
         },
         {
           id: "duplicate",
