@@ -53,4 +53,5 @@ export interface TaskDataHandlers {
   // Cross-cutting operations
   moveTaskToFolder: (taskId: string, currentFolderId: string, newFolderId: string) => void;
   reorderTask: (taskId: string, folderId: string, newIndex: number) => void;
+  moveTaskToFolderAndReorder: (taskId: string, currentFolderId: string, newFolderId: string, newIndex: number) => void;
 }

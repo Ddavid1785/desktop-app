@@ -20,7 +20,8 @@ export interface DropTarget {
 export function useDragAndDrop(
   taskData: TaskData,
   onMoveToFolder: (taskId: string, currentFolderId: string, newFolderId: string) => void,
-  onReorderTask: (taskId: string, folderId: string, newIndex: number) => void
+  onReorderTask: (taskId: string, folderId: string, newIndex: number) => void,
+  moveTaskToFolderAndReorder: (taskId: string, currentFolderId: string, newFolderId: string, newIndex: number) => void
 ) {
   const [draggedTask, setDraggedTask] = useState<DragData | null>(null);
   const [draggedTaskClientXY, setDraggedTaskClientXY] = useState<{ x: number; y: number } | null>(null);
@@ -108,7 +109,7 @@ export function useDragAndDrop(
       document.body.style.cursor = newDropTarget ? "copy" : "no-drop";
     };
 
-    const handleMouseUp = (e: MouseEvent) => {
+    const handleMouseUp = async(e: MouseEvent) => {
       if (!draggedTask) return;
 
       // Prevent the mouseup event from bubbling if we performed a drag operation
@@ -144,11 +145,7 @@ export function useDragAndDrop(
               
               onReorderTask(draggedTask.taskId, draggedTask.currentFolderId, newIndex);
             } else {
-              onMoveToFolder(draggedTask.taskId, draggedTask.currentFolderId, targetFolderId);
-              
-              setTimeout(() => {
-                onReorderTask(draggedTask.taskId, targetFolderId, newIndex);
-              }, 0);
+              moveTaskToFolderAndReorder(draggedTask.taskId, draggedTask.currentFolderId, targetFolderId, newIndex);
             }
           }
         }

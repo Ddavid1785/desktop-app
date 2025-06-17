@@ -42,7 +42,8 @@ export default function ToDoWidget({
   } = useDragAndDrop(
     taskData,
     dataHandlers.moveTaskToFolder,
-    dataHandlers.reorderTask
+    dataHandlers.reorderTask,
+    dataHandlers.moveTaskToFolderAndReorder
   );
 
   // Initialize keyboard shortcuts

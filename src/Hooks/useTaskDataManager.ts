@@ -152,62 +152,6 @@ const moveTaskToFolder = async (taskId: string, currentFolderId: string, newFold
     }
 };
 
-  const duplicateTask = async (taskId: string, folderId: string) => {
-    const cloneTaskId = crypto.randomUUID();
-    try {
-        await invoke("duplicate_task", { taskId, cloneTaskId, folderId });
-        setTaskData((prev) => {
-            const newTaskData = { ...prev };
-            const targetArray = folderId === "ungrouped" ? newTaskData.ungrouped : newTaskData.folders.find((f) => f.id === folderId)?.tasks;
-            if (!targetArray) return prev;
-            const originalTask = targetArray.find(task => task.id === taskId);
-            if (!originalTask) return prev;
-            const duplicatedTask = { ...originalTask, id: cloneTaskId };
-            if (!targetArray.some(task => task.id === cloneTaskId)) {
-                targetArray.push(duplicatedTask);
-            }
-            return newTaskData;
-        });
-    } catch (error) {
-        showToast("Failed to duplicate task", "error");
-    }
-  };
-
-  const deleteFolder = async (folderId: string) => {
-    try {
-        await invoke("delete_tasks_folder", { folderId });
-        setTaskData((prev) => ({ ...prev, folders: prev.folders.filter((folder) => folder.id !== folderId) }));
-    } catch (error) {
-        showToast("Failed to delete folder", "error");
-    }
-  };
-
-  const toggleFolderVisibility = async (folderId: string) => {
-    try {
-        await invoke("toggle_visability_folder", { folderId });
-        setTaskData((prev) => ({ ...prev, folders: prev.folders.map((f) => f.id === folderId ? { ...f, visible: !f.visible } : f)}));
-    } catch (error) {
-        showToast("Failed to toggle folder visibility", "error");
-    }
-  };
-
-  const duplicateFolder = async (folderId: string) => {
-    const folder = taskData.folders.find((f) => f.id === folderId);
-    if (!folder) return;
-
-    const newFolderId = crypto.randomUUID();
-    const newTaskIds = folder.tasks.map(() => crypto.randomUUID());
-
-    try {
-        await invoke("duplicate_folder", { folderId: folderId, folderCloneId: newFolderId, taskCloneIds: newTaskIds });
-        const clonedTasks = folder.tasks.map((task, index) => ({ ...task, id: newTaskIds[index] }));
-        const clonedFolder: TaskFolder = { ...folder, id: newFolderId, name: `${folder.name} (Copy)`, tasks: clonedTasks };
-        setTaskData((prev) => ({ ...prev, folders: [...prev.folders, clonedFolder] }));
-    } catch (error) {
-        showToast("Failed to duplicate folder", "error");
-    }
-  };
-
 const reorderTask = async (taskId: string, folderId: string, newIndex: number) => {
     try {        
         // First, call your Rust backend to make the change permanent.
@@ -272,12 +216,100 @@ const reorderTask = async (taskId: string, folderId: string, newIndex: number) =
     }
 };
 
+const moveTaskToFolderAndReorder = async (
+    taskId: string, 
+    currentFolderId: string, 
+    newFolderId: string, 
+    newIndex: number
+  ) => {
+    try {
+      // First move to the new folder
+      await invoke("move_task_to_folder", { 
+        taskId, 
+        folderId: currentFolderId, 
+        newFolderId 
+      });
+      
+      // Then reorder within that folder
+      await invoke("move_task_order", { 
+        taskId, 
+        folderId: newFolderId, 
+        newIndex 
+      });
+  
+      // Refresh the entire state from backend to ensure consistency
+      const updatedData: TaskData = await invoke("fetch_task_data");
+      setTaskData(updatedData);
+  
+    } catch (error) {
+      console.error("Failed to move and reorder task:", error);
+      showToast("Failed to move task", "error");
+    }
+  };
+
+  const duplicateTask = async (taskId: string, folderId: string) => {
+    const cloneTaskId = crypto.randomUUID();
+    try {
+        await invoke("duplicate_task", { taskId, cloneTaskId, folderId });
+        setTaskData((prev) => {
+            const newTaskData = { ...prev };
+            const targetArray = folderId === "ungrouped" ? newTaskData.ungrouped : newTaskData.folders.find((f) => f.id === folderId)?.tasks;
+            if (!targetArray) return prev;
+            const originalTask = targetArray.find(task => task.id === taskId);
+            if (!originalTask) return prev;
+            const duplicatedTask = { ...originalTask, id: cloneTaskId };
+            if (!targetArray.some(task => task.id === cloneTaskId)) {
+                targetArray.push(duplicatedTask);
+            }
+            return newTaskData;
+        });
+    } catch (error) {
+        showToast("Failed to duplicate task", "error");
+    }
+  };
+
+  const deleteFolder = async (folderId: string) => {
+    try {
+        await invoke("delete_tasks_folder", { folderId });
+        setTaskData((prev) => ({ ...prev, folders: prev.folders.filter((folder) => folder.id !== folderId) }));
+    } catch (error) {
+        showToast("Failed to delete folder", "error");
+    }
+  };
+
+  const toggleFolderVisibility = async (folderId: string) => {
+    try {
+        await invoke("toggle_visability_folder", { folderId });
+        setTaskData((prev) => ({ ...prev, folders: prev.folders.map((f) => f.id === folderId ? { ...f, visible: !f.visible } : f)}));
+    } catch (error) {
+        showToast("Failed to toggle folder visibility", "error");
+    }
+  };
+
+  const duplicateFolder = async (folderId: string) => {
+    const folder = taskData.folders.find((f) => f.id === folderId);
+    if (!folder) return;
+
+    const newFolderId = crypto.randomUUID();
+    const newTaskIds = folder.tasks.map(() => crypto.randomUUID());
+
+    try {
+        await invoke("duplicate_folder", { folderId: folderId, folderCloneId: newFolderId, taskCloneIds: newTaskIds });
+        const clonedTasks = folder.tasks.map((task, index) => ({ ...task, id: newTaskIds[index] }));
+        const clonedFolder: TaskFolder = { ...folder, id: newFolderId, name: `${folder.name} (Copy)`, tasks: clonedTasks };
+        setTaskData((prev) => ({ ...prev, folders: [...prev.folders, clonedFolder] }));
+    } catch (error) {
+        showToast("Failed to duplicate folder", "error");
+    }
+  };
+
   // Create the final handlers object that matches the TaskDataHandlers interface
   const dataHandlers: TaskDataHandlers = {
     toggleTaskCompletion,
     deleteTask,
     addTask,
     reorderTask,
+    moveTaskToFolderAndReorder,
     renameTask: (taskId, folderId) => showToast("Rename feature coming soon!", "info"),
     chooseTaskColor: (taskId) => showToast("Color picker coming soon!", "info"),
     duplicateTask,
