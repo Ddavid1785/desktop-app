@@ -1,7 +1,23 @@
-# Tauri + React + Typescript
+# Desktop Productivity Hub
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+A personal project to learn Rust and build a productivity tool tailored to my needs.
 
-## Recommended IDE Setup
+Built with:
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- 🦀 Rust (via Tauri)
+- ⚡️ Vite + TypeScript
+- 💻 Custom UI/UX for task and folder management
+
+---
+
+## Goals
+
+- Learn Rust through real-world use
+- Create a fast, minimal, and useful desktop productivity hub
+- Experiment with new ideas and features over time
+
+---
+
+## Status
+
+🚧 Work in progress. Core features are being actively developed.

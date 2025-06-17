@@ -1,20 +1,12 @@
 import { useEffect, useRef } from "react";
-import { Task, TaskFolder } from "../types";
+import { Task, TaskDataHandlers, TaskFolder } from "../types";
 
 interface KeyboardShortcutsProps {
   taskData: {
     ungrouped: Task[];
     folders: TaskFolder[];
   };
-  handlers: {
-    duplicateTask: (taskId: string, folderId: string) => void;
-    deleteTask: (taskId: string, folderId: string) => void;
-    toggleTaskCompletion: (taskId: string, folderId: string) => void;
-    addTask: (task: Omit<Task, "id">, folderId: string) => void;
-    addFolder: (folderName: string) => void;
-    duplicateFolder: (folderId: string) => void;
-    deleteFolder: (folderId: string) => void;
-  };
+  handlers:TaskDataHandlers;
   selectedTaskId: string | null;
   selectedFolderId: string | null;
   setShowAddForm: (show: boolean) => void;
@@ -87,6 +79,7 @@ export function useKeyboardShortcuts({
           const newTask = {
             text: clipboardTask.task.text,
             completed: clipboardTask.task.completed,
+            colour: clipboardTask.task.colour,
           };
           handlers.addTask(newTask, targetFolderId);
           onShowToast?.(`Pasted task: "${newTask.text}"`, "success");
@@ -178,7 +171,7 @@ export function useKeyboardShortcuts({
       // QUICK ADD TASK (Alt + N)
       if (isAlt && e.key.toLowerCase() === "n") {
         e.preventDefault();
-        const quickTask = { text: "New Task", completed: false };
+        const quickTask = { text: "New Task", completed: false, colour: "#111827" };
         const targetFolderId = selectedFolderId ?? "";
         handlers.addTask(quickTask, targetFolderId);
         onShowToast?.("Quick task added", "success");

@@ -107,11 +107,9 @@ export default function TaskComponent({
     e.preventDefault();
     duplicateTask(task.id, folderId);
   };
-
   // Check if this task is the drop target
   const isDropTarget = dropTarget?.taskId === task.id;
   const isTopHalf = dropTarget?.isFolderTopHalf;
-
   return (
     <div className="relative">
       {/* Improved drop indicator - only shows between tasks, not at widget edges */}
@@ -128,17 +126,22 @@ export default function TaskComponent({
       <div
         key={task.id || `task-${task.id}-${index}`}
         data-task-id={task.id}
+        // CHANGE 1: Set the dynamic color as a CSS variable in the style attribute.
+        // We add a fallback default color ('#374151' which is gray-700) in case task.colour is empty.
+        style={{ '--task-bg-color': task.colour || '#374151' } as React.CSSProperties}
         className={`
           group flex items-center gap-3 p-2 rounded-md relative
           transition-all duration-200 
           outline-2
           ${isDragging ? "opacity-0" : "opacity-100"}
           ${
+            // CHANGE 2: Use the CSS variable with Tailwind's arbitrary property syntax.
+            // This allows Tailwind to correctly apply your dynamic color with opacity.
             isDropTarget
               ? "ring-2 ring-blue-500/30 bg-blue-950/20"
               : task.completed
-              ? "bg-gray-900"
-              : "bg-gray-900 hover:bg-gray-800"
+              ? `bg-[var(--task-bg-color)]/20` // Color for completed task
+              : `bg-[var(--task-bg-color)]/20 hover:bg-[var(--task-bg-color)]/30` // Color with hover effect for incomplete task
           }
           ${!isDragging ? "cursor-grab" : ""}
           ${

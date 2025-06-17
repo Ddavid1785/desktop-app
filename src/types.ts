@@ -1,5 +1,6 @@
 export interface Task {
     text: string;
+    colour: string;
     completed: boolean;
     id: string;
 }
@@ -7,6 +8,7 @@ export interface Task {
 export interface TaskFolder{
      id: string,
      name: string,
+     colour: string;
      visible: boolean,
      tasks: Task[],
 }
@@ -41,7 +43,7 @@ export interface TaskDataHandlers {
   duplicateTask: (taskId: string, folderId: string) => void;
   
   // Folder-specific operations
-  addFolder: (folderName: string) => void;
+  addFolder: (folderName: string, folderColor: string) => void;
   deleteFolder: (folderId: string) => void;
   toggleFolderVisibility: (folderId: string) => void;
   renameFolder: (folderId: string) => void;

@@ -16,6 +16,7 @@ export function useTaskDataManager() {
     const fetchData = async () => {
       try {
         const data: TaskData = await invoke("fetch_task_data");
+        console.log(data);
         setTaskData(data);
       } catch (error) {
         console.error("Error fetching task data", error);
@@ -23,7 +24,7 @@ export function useTaskDataManager() {
       }
     };
     fetchData();
-  }, [showToast]);
+  }, []);
 
   const toggleTaskCompletion = async (taskId: string, folderId: string) => {
     try {
@@ -64,13 +65,19 @@ export function useTaskDataManager() {
   const addTask = async (taskInput: Omit<Task, "id">, folderId: string) => {
     const taskId = crypto.randomUUID();
     try {
-        await invoke("create_task", { t: { ...taskInput, id: taskId }, folderId });
-        const newTask = { ...taskInput, id: taskId };
+        // Ensure color is set to a default if not provided
+        const taskWithColor = {
+            ...taskInput,
+            colour: taskInput.colour || "bg-gray-800", // Default color if none provided
+            id: taskId
+        };
+        
+        await invoke("create_task", { t: taskWithColor, folderId });
         setTaskData((prev) => {
             if (folderId) {
-                return { ...prev, folders: prev.folders.map(f => f.id === folderId ? { ...f, tasks: [...f.tasks, newTask] } : f) };
+                return { ...prev, folders: prev.folders.map(f => f.id === folderId ? { ...f, tasks: [...f.tasks, taskWithColor] } : f) };
             } else {
-                return { ...prev, ungrouped: [...prev.ungrouped, newTask] };
+                return { ...prev, ungrouped: [...prev.ungrouped, taskWithColor] };
             }
         });
         return taskId;
@@ -80,11 +87,11 @@ export function useTaskDataManager() {
     }
   };
 
-  const addFolder = async (folderName: string) => {
+  const addFolder = async (folderName: string, folderColor: string) => {
     const folderId = crypto.randomUUID();
     try {
-        await invoke("create_folder", { folderName, folderId });
-        setTaskData(prev => ({ ...prev, folders: [...prev.folders, { name: folderName, id: folderId, visible: true, tasks: [] }] }));
+        await invoke("create_folder", { folderName, folderId, folderColor });
+        setTaskData(prev => ({ ...prev, folders: [...prev.folders, { name: folderName, id: folderId, visible: true, tasks: [], colour: folderColor }] }));
         return folderId;
     } catch (e) {
         showToast("Failed to create folder", "error");
@@ -156,7 +163,9 @@ const moveTaskToFolder = async (taskId: string, currentFolderId: string, newFold
             const originalTask = targetArray.find(task => task.id === taskId);
             if (!originalTask) return prev;
             const duplicatedTask = { ...originalTask, id: cloneTaskId };
-            targetArray.push(duplicatedTask);
+            if (!targetArray.some(task => task.id === cloneTaskId)) {
+                targetArray.push(duplicatedTask);
+            }
             return newTaskData;
         });
     } catch (error) {

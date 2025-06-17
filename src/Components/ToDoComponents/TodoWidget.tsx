@@ -111,9 +111,9 @@ export default function ToDoWidget({
     setShowAddForm(false);
   };
 
-  const handleAddFolder = async (folderName: string) => {
+  const handleAddFolder = async (folderName: string, folderColor: string) => {
     const newFolderId = crypto.randomUUID();
-    dataHandlers.addFolder(folderName);
+    dataHandlers.addFolder(folderName, folderColor);
     setSelectedFolderId(newFolderId);
     setShowAddForm(false);
   };
@@ -184,7 +184,7 @@ export default function ToDoWidget({
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               Tasks
             </h2>
-            <div className="text-xs text-gray-500">
+            <div className={`text-xs ${remainingTasks > 0 ? "text-gray-500" : "text-green-500"}`}>
               {remainingTasks > 0 ? `${remainingTasks} remaining` : "All done"}
             </div>
           </div>
