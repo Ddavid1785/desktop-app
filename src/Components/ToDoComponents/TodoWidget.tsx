@@ -168,14 +168,14 @@ export default function ToDoWidget({
             ungrouped-drop-zone bg-gray-950 border border-gray-800 rounded-lg p-4 shadow-2xl mb-4 
             transition-colors duration-200 outline-2 outline-offset-2
             ${
-              selectedFolderId === "" && !selectedTaskId
+              selectedFolderId === "ungrouped" && !selectedTaskId
                 ? "outline-blue-500"
                 : "outline-transparent"
             }
           `}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              handleContainerClick("");
+              handleContainerClick("ungrouped");
             }
           }}
         >

@@ -40,7 +40,7 @@ export function useTaskDataManager() {
         const newUngrouped = prev.ungrouped.map(task => 
           task.id === taskId ? { ...task, completed: !task.completed } : task
         );
-        return { folders: newFolders, ungrouped: folderId ? prev.ungrouped : newUngrouped };
+        return { folders: newFolders, ungrouped: folderId === "ungrouped" ? newUngrouped : prev.ungrouped };
       });
     } catch (e) {
         showToast("Failed to toggle task completion", "error");
@@ -51,7 +51,7 @@ export function useTaskDataManager() {
     try {
         await invoke("delete_task", { taskId, folderId });
         setTaskData((prev) => {
-            if (folderId) {
+            if (folderId !== "ungrouped") {
                 return { ...prev, folders: prev.folders.map(f => f.id === folderId ? { ...f, tasks: f.tasks.filter(t => t.id !== taskId) } : f) };
             } else {
                 return { ...prev, ungrouped: prev.ungrouped.filter(t => t.id !== taskId) };
@@ -74,7 +74,7 @@ export function useTaskDataManager() {
         
         await invoke("create_task", { t: taskWithColor, folderId });
         setTaskData((prev) => {
-            if (folderId) {
+            if (folderId !== "ungrouped") {
                 return { ...prev, folders: prev.folders.map(f => f.id === folderId ? { ...f, tasks: [...f.tasks, taskWithColor] } : f) };
             } else {
                 return { ...prev, ungrouped: [...prev.ungrouped, taskWithColor] };
@@ -111,7 +111,7 @@ const moveTaskToFolder = async (taskId: string, currentFolderId: string, newFold
             let intermediateFolders = [...prevData.folders];
 
             // Step 1: Find and Remove the task from its original location
-            if (currentFolderId === "") {
+            if (currentFolderId === "ungrouped") {
                 taskToMove = updatedUngrouped.find(t => t.id === taskId);
                 updatedUngrouped = updatedUngrouped.filter(t => t.id !== taskId);
             } else {
@@ -131,7 +131,7 @@ const moveTaskToFolder = async (taskId: string, currentFolderId: string, newFold
             }
 
             // Step 2: Add the task to its new location
-            if (newFolderId === "") {
+            if (newFolderId === "ungrouped") {
                 updatedUngrouped.push(taskToMove);
             } else {
                 intermediateFolders = intermediateFolders.map(folder => {
@@ -158,7 +158,7 @@ const moveTaskToFolder = async (taskId: string, currentFolderId: string, newFold
         await invoke("duplicate_task", { taskId, cloneTaskId, folderId });
         setTaskData((prev) => {
             const newTaskData = { ...prev };
-            const targetArray = folderId === "" ? newTaskData.ungrouped : newTaskData.folders.find((f) => f.id === folderId)?.tasks;
+            const targetArray = folderId === "ungrouped" ? newTaskData.ungrouped : newTaskData.folders.find((f) => f.id === folderId)?.tasks;
             if (!targetArray) return prev;
             const originalTask = targetArray.find(task => task.id === taskId);
             if (!originalTask) return prev;

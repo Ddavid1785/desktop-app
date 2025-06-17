@@ -35,7 +35,7 @@ export default function UngroupedTaskList({
   // This prevents the container from shrinking during drag operations
   const shouldShowEmptyState = tasks.length === 0;
   const isDragActive = draggedTask !== null;
-  const isValidDropTarget = dropTarget?.folderId === "";
+  const isValidDropTarget = dropTarget?.folderId === "ungrouped";
 
   return (
     <div
@@ -48,7 +48,7 @@ export default function UngroupedTaskList({
             : "bg-transparent"
         }
       `}
-      data-folder-drop-id=""
+      data-folder-drop-id="ungrouped"
       style={{
         // Ensure consistent minimum height to prevent layout shifts
         minHeight: shouldShowEmptyState ? "4rem" : "auto",
@@ -65,7 +65,7 @@ export default function UngroupedTaskList({
           <TaskComponent
             key={task.id || `ungrouped-task-${task.id}-${index}`}
             task={task}
-            folderId=""
+            folderId="ungrouped"
             duplicateTask={handlers.duplicateTask}
             index={index}
             toggleTaskCompletion={handlers.toggleTaskCompletion}
@@ -73,9 +73,9 @@ export default function UngroupedTaskList({
             onContextMenu={onContextMenu}
             dropTarget={dropTarget}
             onMouseDown={(element, clientX, clientY) =>
-              onTaskDragStart(element, clientX, clientY, task, "")
+              onTaskDragStart(element, clientX, clientY, task, "ungrouped")
             }
-            onClick={() => onTaskClick(task.id, "")}
+            onClick={() => onTaskClick(task.id, "ungrouped")}
             isDragging={draggedTask?.taskId === task.id}
             isSelected={selectedTaskId === task.id}
           />

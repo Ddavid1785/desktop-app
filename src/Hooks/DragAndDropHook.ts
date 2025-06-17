@@ -81,7 +81,7 @@ export function useDragAndDrop(
         if (hoverTaskId && hoverTaskId !== draggedTask.taskId) {
           const folderElement = element.closest("[data-folder-drop-id], .ungrouped-drop-zone");
           if (folderElement) {
-            const folderId = folderElement.getAttribute("data-folder-drop-id") ?? "";
+            const folderId = folderElement.getAttribute("data-folder-drop-id") ?? "ungrouped";
             
             const rect = element.getBoundingClientRect();
             const isTopHalf = (e.clientY - rect.top) < (rect.height / 2);
@@ -98,8 +98,8 @@ export function useDragAndDrop(
         }
         
         // Check for dropping on the ungrouped container
-        if (element.classList.contains("ungrouped-drop-zone") && draggedTask.currentFolderId !== "") {
-          newDropTarget = { folderId: "", taskId: null, isFolderTopHalf: false };
+        if (element.classList.contains("ungrouped-drop-zone") && draggedTask.currentFolderId !== "ungrouped") {
+          newDropTarget = { folderId: "ungrouped", taskId: null, isFolderTopHalf: false };
           break;
         }
       }
@@ -123,7 +123,7 @@ export function useDragAndDrop(
           const targetFolderId = dropTarget.folderId;
           const isSameFolder = targetFolderId === draggedTask.currentFolderId;
           
-          const targetTaskList = targetFolderId === ""
+          const targetTaskList = targetFolderId === "ungrouped"
             ? taskData.ungrouped
             : taskData.folders.find(f => f.id === targetFolderId)?.tasks || [];
           

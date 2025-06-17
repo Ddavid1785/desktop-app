@@ -127,7 +127,7 @@ export default function ContextMenu({
 
   const handleFolderSelect = (folderId: string) => {
     if (data?.taskId) {
-      handlers.moveTaskToFolder(data.taskId, data.folderId || "", folderId);
+      handlers.moveTaskToFolder(data.taskId, data.folderId || "ungrouped", folderId);
       onClose(); // Close the entire menu after action
       setShowFolderSubmenu(false); // Ensure submenu is hidden
     }
@@ -146,12 +146,12 @@ export default function ContextMenu({
     // (A task in a folder can be moved to ungrouped)
     if (data?.folderId) {
       folderOptions.push({
-        id: "", // Use an empty string to represent the ungrouped state
+        id: "ungrouped", // Use "ungrouped" to represent the ungrouped state
         name: "Ungrouped Tasks",
         isUngrouped: true, // Custom flag for UI distinction
       });
     }
-    // If the task is currently ungrouped (data.folderId is ""),
+    // If the task is currently ungrouped (data.folderId is "ungrouped"),
     // then the "Ungrouped Tasks" option should NOT be shown.
     // In this case, availableFolders will already correctly exclude it implicitly.
 
@@ -180,14 +180,14 @@ export default function ContextMenu({
           icon: data.isCompleted ? Circle : CheckCircle,
           textColor: data.isCompleted ? "text-gray-300" : "text-green-400",
           onClick: () =>
-            handlers.toggleTaskCompletion(data.taskId!, data.folderId || ""),
+            handlers.toggleTaskCompletion(data.taskId!, data.folderId || "ungrouped"),
         },
         {
           id: "rename",
           text: "Rename Task",
           icon: Edit,
           textColor: "text-blue-400",
-          onClick: () => handlers.renameTask(data.taskId!, data.folderId || ""),
+          onClick: () => handlers.renameTask(data.taskId!, data.folderId || "ungrouped"),
         },
         {
           id: "choose-color",
@@ -202,7 +202,7 @@ export default function ContextMenu({
           icon: Copy,
           textColor: "text-purple-400",
           onClick: () =>
-            handlers.duplicateTask(data.taskId!, data.folderId || ""),
+            handlers.duplicateTask(data.taskId!, data.folderId || "ungrouped"),
         },
         {
           id: "move",
@@ -217,7 +217,7 @@ export default function ContextMenu({
           text: "Delete Task",
           icon: Trash2,
           textColor: "text-red-400",
-          onClick: () => handlers.deleteTask(data.taskId!, data.folderId || ""),
+          onClick: () => handlers.deleteTask(data.taskId!, data.folderId || "ungrouped"),
         },
       ];
     } else if (data?.type === "folder") {

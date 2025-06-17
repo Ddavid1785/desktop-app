@@ -45,7 +45,7 @@ export function useKeyboardShortcuts({
         const ungroupedTask = taskData.ungrouped.find(
           (t) => t.id === selectedTaskId
         );
-        if (ungroupedTask) return { task: ungroupedTask, folderId: "" };
+        if (ungroupedTask) return { task: ungroupedTask, folderId: "ungrouped" };
         for (const folder of taskData.folders) {
           const folderTask = folder.tasks.find((t) => t.id === selectedTaskId);
           if (folderTask) return { task: folderTask, folderId: folder.id };
@@ -74,7 +74,7 @@ export function useKeyboardShortcuts({
       if (isCtrl && e.key.toLowerCase() === "v") {
         e.preventDefault();
         if (clipboardTask) {
-          const targetFolderId = selectedFolderId ?? "";
+          const targetFolderId = selectedFolderId ?? "ungrouped";
           // THE FIX: Use the 'completed' status from the copied task
           const newTask = {
             text: clipboardTask.task.text,
@@ -101,7 +101,7 @@ export function useKeyboardShortcuts({
             "success"
           );
           lastActionRef.current = "duplicate-task";
-        } else if (selectedFolderId && selectedFolderId !== "") {
+        } else if (selectedFolderId && selectedFolderId !== "ungrouped") {
           const folder = taskData.folders.find(
             (f) => f.id === selectedFolderId
           );
@@ -122,7 +122,7 @@ export function useKeyboardShortcuts({
           handlers.deleteTask(selectedTask.task.id, selectedTask.folderId);
           onShowToast?.(`Deleted task: "${selectedTask.task.text}"`, "success");
           lastActionRef.current = "delete-task";
-        } else if (selectedFolderId && selectedFolderId !== "") {
+        } else if (selectedFolderId && selectedFolderId !== "ungrouped") {
           const folder = taskData.folders.find(
             (f) => f.id === selectedFolderId
           );
@@ -172,7 +172,7 @@ export function useKeyboardShortcuts({
       if (isAlt && e.key.toLowerCase() === "n") {
         e.preventDefault();
         const quickTask = { text: "New Task", completed: false, colour: "#111827" };
-        const targetFolderId = selectedFolderId ?? "";
+        const targetFolderId = selectedFolderId ?? "ungrouped";
         handlers.addTask(quickTask, targetFolderId);
         onShowToast?.("Quick task added", "success");
         lastActionRef.current = "quick-add-task";

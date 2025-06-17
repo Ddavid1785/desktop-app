@@ -251,7 +251,7 @@ export default function AddForm({
     colour: "#111827",
   });
   const [newFolderName, setNewFolderName] = useState("");
-  const [selectedFolderId, setSelectedFolderId] = useState("");
+  const [selectedFolderId, setSelectedFolderId] = useState("ungrouped");
   const [folderColor, setFolderColor] = useState("#111827");
   const [showColorMenu, setShowColorMenu] = useState(false);
   const [showCustomPicker, setShowCustomPicker] = useState(false);
@@ -299,7 +299,7 @@ export default function AddForm({
   const handleCancel = () => {
     setAddingTask({ text: "", completed: false, colour: "#111827" });
     setNewFolderName("");
-    setSelectedFolderId("");
+    setSelectedFolderId("ungrouped");
     setFolderColor("#111827");
     setShowColorMenu(false);
     setShowCustomPicker(false);
@@ -403,7 +403,7 @@ export default function AddForm({
                 onChange={(e) => setSelectedFolderId(e.target.value)}
                 className="w-full px-3 py-2 bg-black border border-gray-800 rounded-md text-white text-sm focus:outline-none focus:ring-1 focus:ring-gray-600 focus:border-gray-600"
               >
-                <option value="">Ungrouped</option>
+                <option value="ungrouped">Tasks</option>
                 {folders.map((folder) => (
                   <option key={folder.id} value={folder.id}>
                     {folder.name}
