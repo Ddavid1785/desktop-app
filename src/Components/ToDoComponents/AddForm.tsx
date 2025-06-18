@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect } from "react";
+import { Check, X, Palette, Sparkles, FolderOpen, Target, Wand2, ChevronDown, Folder } from "lucide-react";
 import { Task, TaskFolder } from "../../types";
-import { Check, X, Palette } from "lucide-react";
+import { createPortal } from "react-dom";
+import CustomColorPicker from "../ColorPicker";
 
 interface AddFormProps {
   showAddForm: boolean;
+  isAddFormOpen: boolean;
   addFormMode: "task" | "folder";
   onClose: () => void;
   onAddTask: (task: Omit<Task, "id">, folderId: string) => void;
@@ -25,248 +28,33 @@ const COLORS = [
   { name: "Amber", value: "#d97706" },   // amber-600
 ];
 
-// Simple Color Picker Component
-interface CustomColorPickerProps {
-  color: string;
-  onChange: (color: string) => void;
-  onClose: () => void;
-}
-
-function CustomColorPicker({ color, onChange, onClose }: CustomColorPickerProps) {
-  const [hue, setHue] = useState(0);
-  const [saturation, setSaturation] = useState(100);
-  const [value, setValue] = useState(100);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  // Convert hex to HSV
-  const hexToHsv = (hex: string) => {
-    const r = parseInt(hex.slice(1, 3), 16) / 255;
-    const g = parseInt(hex.slice(3, 5), 16) / 255;
-    const b = parseInt(hex.slice(5, 7), 16) / 255;
-
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const diff = max - min;
-    
-    let h = 0;
-    let s = max === 0 ? 0 : diff / max;
-    let v = max;
-
-    if (diff !== 0) {
-      switch (max) {
-        case r: h = (g - b) / diff + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / diff + 2; break;
-        case b: h = (r - g) / diff + 4; break;
-      }
-      h /= 6;
-    }
-
-    return [Math.round(h * 360), Math.round(s * 100), Math.round(v * 100)];
-  };
-
-  // Convert HSV to hex
-  const hsvToHex = (h: number, s: number, v: number) => {
-    h /= 360;
-    s /= 100;
-    v /= 100;
-
-    const c = v * s;
-    const x = c * (1 - Math.abs((h * 6) % 2 - 1));
-    const m = v - c;
-
-    let r = 0, g = 0, b = 0;
-
-    if (h < 1/6) { r = c; g = x; b = 0; }
-    else if (h < 2/6) { r = x; g = c; b = 0; }
-    else if (h < 3/6) { r = 0; g = c; b = x; }
-    else if (h < 4/6) { r = 0; g = x; b = c; }
-    else if (h < 5/6) { r = x; g = 0; b = c; }
-    else { r = c; g = 0; b = x; }
-
-    r = Math.round((r + m) * 255);
-    g = Math.round((g + m) * 255);
-    b = Math.round((b + m) * 255);
-
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-  };
-
-  // Convert hex to RGB
-  const hexToRgb = (hex: string) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return { r, g, b };
-  };
-
-  // Initialize HSV values from current color
-  useEffect(() => {
-    const [h, s, v] = hexToHsv(color);
-    setHue(h);
-    setSaturation(s);
-    setValue(v);
-  }, [color]);
-
-  // Draw the color area
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const width = canvas.width;
-    const height = canvas.height;
-
-    // Create the saturation/value gradient
-    const imageData = ctx.createImageData(width, height);
-    const data = imageData.data;
-
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const s = (x / width) * 100;
-        const v = ((height - y) / height) * 100;
-        const hex = hsvToHex(hue, s, v);
-        const rgb = hexToRgb(hex);
-        
-        const index = (y * width + x) * 4;
-        data[index] = rgb.r;
-        data[index + 1] = rgb.g;
-        data[index + 2] = rgb.b;
-        data[index + 3] = 255;
-      }
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-  }, [hue]);
-
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    const newS = (x / rect.width) * 100;
-    const newV = ((rect.height - y) / rect.height) * 100;
-
-    setSaturation(Math.max(0, Math.min(100, newS)));
-    setValue(Math.max(0, Math.min(100, newV)));
-
-    const newColor = hsvToHex(hue, newS, newV);
-    onChange(newColor);
-  };
-
-  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    setIsDragging(true);
-    handleCanvasClick(e);
-  };
-
-  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (isDragging) {
-      handleCanvasClick(e);
-    }
-  };
-
-  const handleCanvasMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleHueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newHue = Number(e.target.value);
-    setHue(newHue);
-    const newColor = hsvToHex(newHue, saturation, value);
-    onChange(newColor);
-  };
-
-  const currentColor = hsvToHex(hue, saturation, value);
-  const currentRgb = hexToRgb(currentColor);
-
-  return (
-    <div className="p-4 bg-gray-900 border border-gray-800 rounded-md shadow-lg w-64">
-      <div className="space-y-3">
-        {/* Color Area */}
-        <div className="relative">
-          <canvas
-            ref={canvasRef}
-            width={200}
-            height={150}
-            className="w-full h-32 border border-gray-700 rounded cursor-crosshair"
-            onMouseDown={handleCanvasMouseDown}
-            onMouseMove={handleCanvasMouseMove}
-            onMouseUp={handleCanvasMouseUp}
-            onMouseLeave={handleCanvasMouseUp}
-          />
-          {/* Crosshair */}
-          <div
-            className="absolute w-3 h-3 border-2 border-white rounded-full pointer-events-none"
-            style={{
-              left: `${(saturation / 100) * 100}%`,
-              top: `${(1 - value / 100) * 100}%`,
-              transform: 'translate(-50%, -50%)',
-              boxShadow: '0 0 0 1px rgba(0,0,0,0.3)'
-            }}
-          />
-        </div>
-
-        {/* Hue Bar */}
-        <input
-          type="range"
-          min="0"
-          max="360"
-          value={hue}
-          onChange={handleHueChange}
-          className="w-full h-4 rounded-lg appearance-none cursor-pointer"
-          style={{
-            background: `linear-gradient(to right, 
-              hsl(0, 100%, 50%), hsl(60, 100%, 50%), hsl(120, 100%, 50%), 
-              hsl(180, 100%, 50%), hsl(240, 100%, 50%), hsl(300, 100%, 50%), 
-              hsl(360, 100%, 50%))`
-          }}
-        />
-
-        {/* RGB Values */}
-        <div className="flex justify-between text-xs text-gray-400">
-          <span>R: {currentRgb.r}</span>
-          <span>G: {currentRgb.g}</span>
-          <span>B: {currentRgb.b}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function AddForm({
   showAddForm,
+  isAddFormOpen,
   addFormMode,
   onClose,
   onAddTask,
   onAddFolder,
-  folders,
+  folders = [],
 }: AddFormProps) {
-  const [addingTask, setAddingTask] = useState<Omit<Task, "id">>({
+  const [addingTask, setAddingTask] = useState({
     text: "",
     completed: false,
-    colour: "#111827",
+    colour: "#6366f1",
   });
   const [newFolderName, setNewFolderName] = useState("");
-  const [selectedFolderId, setSelectedFolderId] = useState(folders.length > 0 ? folders[0].id : "");
-  const [folderColor, setFolderColor] = useState("#111827");
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(folders.length > 0 ? folders[0].id : null);
+  const [folderColor, setFolderColor] = useState("#6366f1");
   const [showColorMenu, setShowColorMenu] = useState(false);
   const [showCustomPicker, setShowCustomPicker] = useState(false);
-  const colorMenuRef = useRef<HTMLDivElement>(null);
-
-  // Update selectedFolderId when folders change
-  useEffect(() => {
-    if (folders.length > 0 && !selectedFolderId) {
-      setSelectedFolderId(folders[0].id);
-    }
-  }, [folders, selectedFolderId]);
+  const [showFolderDropdown, setShowFolderDropdown] = useState(false);
+  const colorMenuRef = useRef(null);
+  const customColorPickerRef = useRef(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (colorMenuRef.current && !colorMenuRef.current.contains(event.target as Node)) {
+      if (colorMenuRef.current && !(colorMenuRef.current as HTMLElement).contains(event.target as Node)) {
         setShowColorMenu(false);
         setShowCustomPicker(false);
       }
@@ -275,12 +63,34 @@ export default function AddForm({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleChangeOnInputForTask = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const field = e.target.name as keyof Omit<Task, "id">;
-    const value =
-      e.target.type === "checkbox" ? e.target.checked : e.target.value;
+  useEffect(() => {
+    if (folders.length > 0 && !selectedFolderId) {
+      setSelectedFolderId(folders[0].id);
+    }
+  }, [folders, selectedFolderId]);
+
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isAddFormOpen) {
+        onClose();
+      }
+    };
+
+    if (isAddFormOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isAddFormOpen, onClose]);
+
+  const handleChangeOnInputForTask = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const field = e.target.name;
+    const value = e.target.type === "checkbox" ? e.target.checked : e.target.value;
 
     setAddingTask((prev) => ({
       ...prev,
@@ -290,26 +100,27 @@ export default function AddForm({
 
   const handleSubmit = () => {
     if (addFormMode === "task") {
-      if (addingTask.text.trim()) {
+      if (addingTask.text.trim() && selectedFolderId) {
         onAddTask(addingTask, selectedFolderId);
-        setAddingTask({ text: "", completed: false, colour: "#111827" });
+        setAddingTask({ text: "", completed: false, colour: "#6366f1" });
       }
     } else {
       if (newFolderName.trim()) {
         onAddFolder(newFolderName, folderColor);
         setNewFolderName("");
-        setFolderColor("#111827");
+        setFolderColor("#6366f1");
       }
     }
   };
 
   const handleCancel = () => {
-    setAddingTask({ text: "", completed: false, colour: "#111827" });
+    setAddingTask({ text: "", completed: false, colour: "#6366f1" });
     setNewFolderName("");
-    setSelectedFolderId("");
-    setFolderColor("#111827");
+    setSelectedFolderId("ungrouped");
+    setFolderColor("#6366f1");
     setShowColorMenu(false);
     setShowCustomPicker(false);
+    setShowFolderDropdown(false);
     onClose();
   };
 
@@ -318,221 +129,543 @@ export default function AddForm({
     setShowCustomPicker(false);
   };
 
-  if (!showAddForm) return null;
+  const handleFolderSelect = (folderId: string) => {
+    setSelectedFolderId(folderId);
+    setShowFolderDropdown(false);
+  };
 
-  return (
-    <div className="bg-gray-950 border border-gray-800 rounded-lg p-4 shadow-2xl mb-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-white">
-          {addFormMode === "task" ? "New Task" : "New Folder"}
-        </h3>
-        <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-300 transition-colors hover:cursor-pointer"
+  // Handle backdrop click
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  if (!showAddForm || !isAddFormOpen) return null;
+
+  const currentColor = addFormMode === "task" ? addingTask.colour : folderColor;
+  const isTaskMode = addFormMode === "task";
+
+  // Render as portal to ensure it's on top of everything
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      onClick={handleBackdropClick}
+    >
+      {/* Enhanced backdrop with blur */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in-0 duration-300" />
+      
+      {/* Modal container */}
+      <div 
+        ref={modalRef}
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4 zoom-in-95 duration-300"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Enhanced Form Container */}
+        <div 
+          className="relative bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-2xl shadow-2xl p-6 overflow-hidden"
+          style={{
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+          }}
         >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
+          {/* Animated background gradient */}
+          <div 
+            className="absolute inset-0 opacity-5 animate-pulse"
+            style={{
+              background: isTaskMode 
+                ? 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)'
+                : 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 50%, #f59e0b 100%)'
+            }}
+          />
+          
+          {/* Animated accent line */}
+          <div 
+            className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-30"
+          />
 
-      <div className="space-y-3">
-        {addFormMode === "task" ? (
-          <>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                name="text"
-                onChange={handleChangeOnInputForTask}
-                value={addingTask.text}
-                placeholder="What needs to be done?"
-                className="flex-1 px-3 py-2 bg-black border border-gray-800 rounded-md text-white text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-600 focus:border-gray-600"
-              />
-              <div className="relative" ref={colorMenuRef}>
-                <button
-                  onClick={handleColorButtonClick}
-                  className="w-8 h-8 rounded-md border-2 border-gray-700 hover:border-gray-600 transition-colors"
-                  style={{ backgroundColor: addingTask.colour }}
-                  title="Choose color"
-                />
-                {showColorMenu && !showCustomPicker && (
-                  <div className="absolute right-0 mt-2 p-4 bg-gray-900 border border-gray-800 rounded-md shadow-lg z-10 min-w-[200px]">
-                    <div className="grid grid-cols-4 gap-4">
-                      {COLORS.map((color) => (
-                        <button
-                          key={color.value}
-                          onClick={() => {
-                            setAddingTask((prev) => ({
-                              ...prev,
-                              colour: color.value,
-                            }));
-                            setShowColorMenu(false);
-                          }}
-                          style={{ backgroundColor: color.value }}
-                          className={`w-8 h-8 rounded border-2 transition-all ${
-                            addingTask.colour === color.value
-                              ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900"
-                              : "hover:ring-2 hover:ring-white/50"
-                          }`}
-                          title={color.name}
-                        />
-                      ))}
-                      
-                      {/* Custom Color Picker Button */}
-                      <button
-                        onClick={() => {
-                          setShowCustomPicker(true);
-                          setShowColorMenu(false);
-                        }}
-                        className="w-8 h-8 rounded border-2 border-gray-700 flex items-center justify-center transition-all hover:ring-2 hover:ring-white/50"
-                        title="Custom color"
-                      >
-                        <Palette className="w-4 h-4 text-gray-400" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {showCustomPicker && (
-                  <div className="absolute right-0 mt-2 z-20">
-                    <CustomColorPicker
-                      color={addingTask.colour}
-                      onChange={(color) => setAddingTask(prev => ({ ...prev, colour: color }))}
-                      onClose={() => setShowCustomPicker(false)}
-                    />
-                  </div>
+          {/* Enhanced Header */}
+          <div className="flex items-center justify-between mb-6 relative z-10">
+            <div className="flex items-center gap-3">
+              <div 
+                className="p-2 rounded-xl bg-gradient-to-br shadow-lg"
+                style={{
+                  background: isTaskMode 
+                    ? 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)'
+                    : 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%)',
+                  boxShadow: isTaskMode 
+                    ? '0 8px 20px rgba(59, 130, 246, 0.3)'
+                    : '0 8px 20px rgba(139, 92, 246, 0.3)'
+                }}
+              >
+                {isTaskMode ? (
+                  <Target className="w-5 h-5 text-white" />
+                ) : (
+                  <FolderOpen className="w-5 h-5 text-white" />
                 )}
               </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">
+                  {isTaskMode ? "Create New Task" : "Create New Folder"}
+                </h3>
+                <p className="text-sm text-gray-400">
+                  {isTaskMode ? "Add a task to your workflow" : "Organize your tasks with folders"}
+                </p>
+              </div>
             </div>
+            <button
+              onClick={onClose}
+              className="
+                group text-gray-400 hover:text-white transition-all duration-200 
+                p-2 rounded-xl hover:bg-gray-800/60 hover:scale-110
+                relative overflow-hidden
+              "
+            >
+              <div className="absolute inset-0 bg-red-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl" />
+              <X className="w-5 h-5 relative z-10" />
+            </button>
+          </div>
 
-            {/* Folder Selection Dropdown */}
-            <div className="space-y-2">
-              <label className="text-sm text-gray-400">Add to folder:</label>
-              <select
-                value={selectedFolderId}
-                onChange={(e) => setSelectedFolderId(e.target.value)}
-                className="w-full px-3 py-2 bg-black border border-gray-800 rounded-md text-white text-sm focus:outline-none focus:ring-1 focus:ring-gray-600 focus:border-gray-600"
-              >
-                {folders.map((folder) => (
-                  <option key={folder.id} value={folder.id}>
-                    {folder.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Completed Checkbox */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() =>
-                  setAddingTask((prev) => ({
-                    ...prev,
-                    completed: !prev.completed,
-                  }))
-                }
-                className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all hover:cursor-pointer ${
-                  addingTask.completed
-                    ? "bg-green-600 border-green-600"
-                    : "border-gray-600 hover:border-gray-500"
-                }`}
-              >
-                {addingTask.completed && (
-                  <Check className="w-3 h-3 text-white" />
-                )}
-              </button>
-              <span className="text-sm text-gray-400">Mark as completed</span>
-            </div>
-          </>
-        ) : (
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              placeholder="Folder name"
-              className="flex-1 px-3 py-2 bg-black border border-gray-800 rounded-md text-white text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-600 focus:border-gray-600"
-            />
-            <div className="relative" ref={colorMenuRef}>
-              <button
-                onClick={handleColorButtonClick}
-                className="w-8 h-8 rounded-md hover:cursor-pointer border-2 border-gray-700 hover:border-gray-600 transition-colors"
-                style={{ backgroundColor: folderColor }}
-                title="Choose color"
-              />
-              
-              {showColorMenu && !showCustomPicker && (
-                <div className="absolute right-0 mt-2 p-4 bg-gray-900 border border-gray-800 rounded-md shadow-lg z-10 min-w-[200px]">
-                  <div className="grid grid-cols-4 gap-4">
-                    {COLORS.map((color) => (
-                      <button
-                        key={color.value}
-                        onClick={() => {
-                          setFolderColor(color.value);
-                          setShowColorMenu(false);
-                        }}
-                        style={{ backgroundColor: color.value }}
-                        className={`w-8 h-8 rounded border-2 transition-all hover:cursor-pointer ${
-                          folderColor === color.value
-                            ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900"
-                            : "hover:ring-2 hover:ring-white/50"
-                        }`}
-                        title={color.name}
+          <div className="space-y-5 relative z-10">
+            {isTaskMode ? (
+              <>
+                {/* Enhanced Task Input */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-blue-400" />
+                    Task Description
+                  </label>
+                  <div className="flex gap-3">
+                    <div className="flex-1 relative">
+                      <input
+                        type="text"
+                        name="text"
+                        onChange={handleChangeOnInputForTask}
+                        value={addingTask.text}
+                        placeholder="What amazing thing will you accomplish?"
+                        className="
+                          w-full px-4 py-3 bg-gray-800/60 border border-gray-700/50 rounded-xl 
+                          text-white text-sm placeholder-gray-500 
+                          focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/50
+                          transition-all duration-200 backdrop-blur-sm
+                        "
+                        autoFocus
                       />
-                    ))}
-                    
-                    {/* Custom Color Picker Button */}
-                    <button
-                      onClick={() => {
-                        setShowCustomPicker(true);
-                        setShowColorMenu(false);
-                      }}
-                      className="w-8 h-8 rounded border-2 border-gray-700 flex items-center justify-center transition-all hover:ring-2 hover:ring-white/50"
-                      title="Custom color"
-                    >
-                      <Palette className="w-4 h-4 text-gray-400" />
-                    </button>
+                      {/* Input glow effect */}
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 peer-focus:opacity-100 transition-opacity duration-200 pointer-events-none" />
+                    </div>
+
+                    {/* Enhanced Color Picker */}
+                    <div className="relative" ref={colorMenuRef}>
+                      <button
+                        onClick={handleColorButtonClick}
+                        className="
+                          group relative w-12 h-12 rounded-xl border-2 border-gray-600/50 
+                          hover:border-gray-500/50 transition-all duration-200 overflow-hidden
+                          hover:scale-110 hover:shadow-lg
+                        "
+                        style={{ 
+                          backgroundColor: addingTask.colour,
+                          boxShadow: `0 4px 12px ${addingTask.colour}40`
+                        }}
+                        title="Choose task color"
+                      >
+                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                        <Palette className="absolute inset-0 w-4 h-4 m-auto text-white/80 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                      </button>
+
+                      {/* Enhanced Color Menu */}
+                      {showColorMenu && !showCustomPicker && (
+                        <div 
+                          className="
+                            absolute right-0 mt-3 p-4 bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 
+                            rounded-2xl shadow-2xl z-10 min-w-[240px] overflow-hidden
+                          "
+                          style={{
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                          }}
+                        >
+                          {/* Menu gradient background */}
+                          <div 
+                            className="absolute inset-0 opacity-5"
+                            style={{
+                              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%)'
+                            }}
+                          />
+                          
+                          <div className="relative z-10">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Palette className="w-4 h-4 text-purple-400" />
+                              <span className="text-sm font-medium text-white">Choose Color</span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-3">
+                              {COLORS.map((color) => (
+                                <button
+                                  key={color.value}
+                                  onClick={() => {
+                                    setAddingTask((prev) => ({
+                                      ...prev,
+                                      colour: color.value,
+                                    }));
+                                    setShowColorMenu(false);
+                                  }}
+                                  style={{ backgroundColor: color.value }}
+                                  className={`
+                                    group relative w-10 h-10 rounded-xl border-2 transition-all duration-200 
+                                    hover:scale-110 hover:shadow-lg overflow-hidden
+                                    ${addingTask.colour === color.value
+                                      ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900 border-white/50"
+                                      : "border-gray-600/30 hover:border-gray-500/50"
+                                    }
+                                  `}
+                                  title={color.name}
+                                >
+                                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                                  {addingTask.colour === color.value && (
+                                    <Check className="absolute inset-0 w-4 h-4 m-auto text-white" />
+                                  )}
+                                </button>
+                              ))}
+                              
+                              {/* Custom Color Picker Button */}
+                              <button
+                                onClick={() => {
+                                  setShowCustomPicker(true);
+                                  setShowColorMenu(false);
+                                }}
+                                className="
+                                  group relative w-10 h-10 rounded-xl border-2 border-gray-600/50 
+                                  flex items-center justify-center transition-all duration-200 
+                                  hover:border-purple-500/50 hover:scale-110 hover:shadow-lg
+                                  bg-gradient-to-br from-purple-500/20 to-pink-500/20
+                                "
+                                title="Custom color"
+                              >
+                                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl" />
+                                <Wand2 className="w-4 h-4 text-purple-400 relative z-10" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Custom Color Picker */}
+                      {showCustomPicker && (
+                        <div className="absolute right-0 mt-3 z-20">
+                          <CustomColorPicker
+                            color={addingTask.colour}
+                            onChange={(color:string) => setAddingTask(prev => ({ ...prev, colour: color }))}
+                            onClose={() => setShowCustomPicker(false)}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              )}
-              {showCustomPicker && (
-                <div className="absolute right-0 mt-2 z-20">
-                  <CustomColorPicker
-                    color={folderColor}
-                    onChange={setFolderColor}
-                    onClose={() => setShowCustomPicker(false)}
-                  />
+
+                {/* Enhanced Folder Selection */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                    <FolderOpen className="w-4 h-4 text-purple-400" />
+                    Add to Folder
+                  </label>
+                  
+                  <div className="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowFolderDropdown(!showFolderDropdown);
+                      }}
+                      className="
+                        w-full px-4 py-3 bg-gray-800/60 border border-gray-700/50 rounded-xl 
+                        text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 
+                        focus:border-purple-500/50 transition-all duration-200 backdrop-blur-sm
+                        flex items-center justify-between hover:bg-gray-700/60
+                      "
+                    >
+                      <div className="flex items-center gap-3">
+                        <Folder size={16} style={{ color: folders.find(f => f.id === selectedFolderId)?.colour }} />
+                        <span 
+                          className="font-medium"
+                          style={{ color: folders.find(f => f.id === selectedFolderId)?.colour }}
+                        >
+                          {folders.find(f => f.id === selectedFolderId)?.name || "Select a folder"}
+                        </span>
+                      </div>
+                      <ChevronDown size={16} className="text-gray-400" />
+                    </button>
+
+                    {showFolderDropdown && (
+                      <div 
+                        className="
+                          absolute top-full left-0 right-0 mt-2 z-10
+                          bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 
+                          rounded-xl shadow-2xl py-2 animate-in fade-in-0 zoom-in-95 duration-200
+                        "
+                        style={{
+                          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {folders.map((folder) => (
+                          <button 
+                            key={folder.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleFolderSelect(folder.id);
+                            }}
+                            className={`
+                              w-full flex items-center gap-3 px-4 py-3 text-sm text-left 
+                              transition-all duration-150 hover:translate-x-1 group
+                              ${selectedFolderId === folder.id 
+                                ? 'bg-gray-800/80' 
+                                : 'hover:bg-gray-800/60'
+                              }
+                            `}
+                          >
+                            <Folder 
+                              size={16} 
+                              style={{ color: folder.colour }} 
+                              className={`group-hover:scale-110 transition-transform ${
+                                selectedFolderId === folder.id ? 'scale-110' : ''
+                              }`} 
+                            />
+                            <span 
+                              className={`font-medium transition-colors ${
+                                selectedFolderId === folder.id ? 'text-white' : ''
+                              }`}
+                              style={{ color: folder.colour }}
+                            >
+                              {folder.name}
+                            </span>
+                            {selectedFolderId === folder.id && (
+                              <Check className="w-4 h-4 ml-auto text-white" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
+
+                {/* Enhanced Completed Checkbox */}
+                <div className="flex items-center gap-3 p-3 bg-gray-800/30 rounded-xl border border-gray-700/30">
+                  <button
+                    onClick={() =>
+                      setAddingTask((prev) => ({
+                        ...prev,
+                        completed: !prev.completed,
+                      }))
+                    }
+                    className={`
+                      w-6 h-6 rounded-lg border-2 flex items-center justify-center 
+                      transition-all duration-200 flex-shrink-0 relative overflow-hidden
+                      ${addingTask.completed
+                        ? "bg-gradient-to-br from-green-500 to-green-600 border-green-500 shadow-lg shadow-green-500/25"
+                        : "border-gray-500 hover:border-gray-400 bg-gray-800/50 hover:bg-gray-700/50"
+                      }
+                    `}
+                  >
+                    {addingTask.completed && (
+                      <Check className="w-4 h-4 text-white" />
+                    )}
+                  </button>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-300">Mark as completed</p>
+                    <p className="text-xs text-gray-500">Task will be created in completed state</p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Enhanced Folder Input */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                    <FolderOpen className="w-4 h-4 text-purple-400" />
+                    Folder Name
+                  </label>
+                  <div className="flex gap-3">
+                    <div className="flex-1 relative">
+                      <input
+                        type="text"
+                        value={newFolderName}
+                        onChange={(e) => setNewFolderName(e.target.value)}
+                        placeholder="Enter folder name (e.g., Work, Personal, Ideas)"
+                        className="
+                          w-full px-4 py-3 bg-gray-800/60 border border-gray-700/50 rounded-xl 
+                          text-white text-sm placeholder-gray-500 
+                          focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500/50
+                          transition-all duration-200 backdrop-blur-sm
+                        "
+                        autoFocus
+                      />
+                    </div>
+
+                    {/* Folder Color Picker */}
+                    <div className="relative" ref={colorMenuRef}>
+                      <button
+                        onClick={handleColorButtonClick}
+                        className="
+                          group relative w-12 h-12 rounded-xl border-2 border-gray-600/50 
+                          hover:border-gray-500/50 transition-all duration-200 overflow-hidden
+                          hover:scale-110 hover:shadow-lg
+                        "
+                        style={{ 
+                          backgroundColor: folderColor,
+                          boxShadow: `0 4px 12px ${folderColor}40`
+                        }}
+                        title="Choose folder color"
+                      >
+                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                        <Palette className="absolute inset-0 w-4 h-4 m-auto text-white/80 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                      </button>
+
+                      {/* Enhanced Color Menu for Folder */}
+                      {showColorMenu && !showCustomPicker && (
+                        <div 
+                          className="
+                            absolute right-0 mt-3 p-4 bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 
+                            rounded-2xl shadow-2xl z-10 min-w-[240px] overflow-hidden
+                          "
+                          style={{
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                          }}
+                        >
+                          {/* Menu gradient background */}
+                          <div 
+                            className="absolute inset-0 opacity-5"
+                            style={{
+                              background: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 50%, #f59e0b 100%)'
+                            }}
+                          />
+                          
+                          <div className="relative z-10">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Palette className="w-4 h-4 text-purple-400" />
+                              <span className="text-sm font-medium text-white">Choose Color</span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-3">
+                              {COLORS.map((color) => (
+                                <button
+                                  key={color.value}
+                                  onClick={() => {
+                                    setFolderColor(color.value);
+                                    setShowColorMenu(false);
+                                  }}
+                                  style={{ backgroundColor: color.value }}
+                                  className={`
+                                    group relative w-10 h-10 rounded-xl border-2 transition-all duration-200 
+                                    hover:scale-110 hover:shadow-lg overflow-hidden
+                                    ${folderColor === color.value
+                                      ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900 border-white/50"
+                                      : "border-gray-600/30 hover:border-gray-500/50"
+                                    }
+                                  `}
+                                  title={color.name}
+                                >
+                                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                                  {folderColor === color.value && (
+                                    <Check className="absolute inset-0 w-4 h-4 m-auto text-white" />
+                                  )}
+                                </button>
+                              ))}
+                              
+                              {/* Custom Color Picker Button */}
+                              <button
+                                onClick={() => {
+                                  setShowCustomPicker(true);
+                                  setShowColorMenu(false);
+                                }}
+                                className="
+                                  group relative w-10 h-10 rounded-xl border-2 border-gray-600/50 
+                                  flex items-center justify-center transition-all duration-200 
+                                  hover:border-purple-500/50 hover:scale-110 hover:shadow-lg
+                                  bg-gradient-to-br from-purple-500/20 to-pink-500/20
+                                "
+                                title="Custom color"
+                              >
+                                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl" />
+                                <Wand2 className="w-4 h-4 text-purple-400 relative z-10" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {showCustomPicker && createPortal(
+                        <div className="fixed" style={{
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          zIndex: 9999
+                        }}
+                        ref={customColorPickerRef}
+                        >
+                          <CustomColorPicker
+                            color={folderColor}
+                            onChange={setFolderColor}
+                            onClose={() => setShowCustomPicker(false)}
+                          />
+                        </div>,
+                        document.body
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}{/* Enhanced Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={handleSubmit}
+                disabled={
+                  isTaskMode 
+                    ? !addingTask.text.trim() 
+                    : !newFolderName.trim()
+                }
+                className={`
+                  flex-1 relative overflow-hidden rounded-xl px-6 py-3 font-medium text-white 
+                  transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+                  ${isTaskMode 
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg shadow-blue-500/25' 
+                    : 'bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 shadow-lg shadow-purple-500/25'
+                  }
+                  hover:scale-[1.02] active:scale-[0.98]
+                `}
+              >
+                <div className="absolute inset-0 bg-white/10 opacity-0 hover:opacity-100 transition-opacity duration-200" />
+                <div className="relative z-10 flex items-center justify-center gap-2">
+                  {isTaskMode ? (
+                    <>
+                      <Target className="w-4 h-4" />
+                      Create Task
+                    </>
+                  ) : (
+                    <>
+                      <FolderOpen className="w-4 h-4" />
+                      Create Folder
+                    </>
+                  )}
+                </div>
+              </button>
+  
+              <button
+                onClick={handleCancel}
+                className="
+                  px-6 py-3 rounded-xl font-medium text-gray-300 border border-gray-600/50 
+                  hover:border-gray-500/50 hover:bg-gray-800/50 transition-all duration-200
+                  hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden
+                "
+              >
+                <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 transition-opacity duration-200" />
+                <div className="relative z-10 flex items-center justify-center gap-2 hover:cursor-pointer">
+                  <X className="w-4 h-4" />
+                  Cancel
+                </div>
+              </button>
             </div>
           </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex gap-2 pt-2">
-          <button
-            onClick={handleSubmit}
-            disabled={
-              addFormMode === "task"
-                ? !addingTask.text.trim()
-                : !newFolderName.trim()
-            }
-            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
-              (
-                addFormMode === "task"
-                  ? addingTask.text.trim()
-                  : newFolderName.trim()
-              )
-                ? "bg-blue-600 hover:bg-blue-700 text-white hover:cursor-pointer"
-                : "bg-gray-800 text-gray-600 cursor-not-allowed"
-            }`}
-          >
-            {addFormMode === "task" ? "Add Task" : "Create Folder"}
-          </button>
-          <button
-            onClick={handleCancel}
-            className="px-3 py-2 bg-gray-900 border border-gray-800 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 hover:border-gray-700 transition-all text-sm hover:cursor-pointer"
-          >
-            Cancel
-          </button>
         </div>
       </div>
-    </div>
-  );
-}
+    </div>,
+      document.body
+    );
+  }

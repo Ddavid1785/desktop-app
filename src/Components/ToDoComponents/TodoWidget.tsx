@@ -193,6 +193,7 @@ export default function ToDoWidget({
           onAddTask={handleAddTask}
           onAddFolder={handleAddFolder}
           folders={taskData}
+          isAddFormOpen={showAddForm}
         />
 
         {/* Content container with proper spacing */}
@@ -216,18 +217,6 @@ export default function ToDoWidget({
           <KeyboardShortcutsHelp onClose={() => setShowKeyboardHelp(false)} />
         )}
       </div>
-
-      {/* OPTION 2: Fixed floating buttons at bottom-right of viewport (uncomment to use) */}
-      {/*
-      <div className="fixed bottom-6 right-6 z-50">
-        <ToDoActionButtons
-          setAddFormMode={setAddFormMode}
-          setShowAddForm={setShowAddForm}
-          addFormMode={addFormMode}
-          showAddForm={showAddForm}
-        />
-      </div>
-      */}
     </>
   );
 }
