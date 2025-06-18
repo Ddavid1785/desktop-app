@@ -54,7 +54,8 @@ export default function AddForm({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (colorMenuRef.current && !(colorMenuRef.current as HTMLElement).contains(event.target as Node)) {
+      if (colorMenuRef.current && !(colorMenuRef.current as HTMLElement).contains(event.target as Node) &&
+          customColorPickerRef.current && !(customColorPickerRef.current as HTMLElement).contains(event.target as Node)) {
         setShowColorMenu(false);
         setShowCustomPicker(false);
       }
@@ -143,7 +144,6 @@ export default function AddForm({
 
   if (!showAddForm || !isAddFormOpen) return null;
 
-  const currentColor = addFormMode === "task" ? addingTask.colour : folderColor;
   const isTaskMode = addFormMode === "task";
 
   // Render as portal to ensure it's on top of everything
@@ -216,7 +216,7 @@ export default function AddForm({
               onClick={onClose}
               className="
                 group text-gray-400 hover:text-white transition-all duration-200 
-                p-2 rounded-xl hover:bg-gray-800/60 hover:scale-110
+                p-2 rounded-xl hover:bg-gray-800/60 hover:scale-110 hover:cursor-pointer
                 relative overflow-hidden
               "
             >
@@ -349,14 +349,22 @@ export default function AddForm({
                       )}
 
                       {/* Custom Color Picker */}
-                      {showCustomPicker && (
-                        <div className="absolute right-0 mt-3 z-20">
+                      {showCustomPicker && createPortal(
+                        <div className="fixed" style={{
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(50%, -25%)',
+                          zIndex: 9999
+                        }}
+                        ref={customColorPickerRef}
+                        >
                           <CustomColorPicker
                             color={addingTask.colour}
                             onChange={(color:string) => setAddingTask(prev => ({ ...prev, colour: color }))}
                             onClose={() => setShowCustomPicker(false)}
                           />
-                        </div>
+                        </div>,
+                        document.body
                       )}
                     </div>
                   </div>
@@ -399,7 +407,7 @@ export default function AddForm({
                         className="
                           absolute top-full left-0 right-0 mt-2 z-10
                           bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 
-                          rounded-xl shadow-2xl py-2 animate-in fade-in-0 zoom-in-95 duration-200
+                          rounded-xl shadow-2xl py-2 animate-in fade-in-0 zoom-in-95 duration-200 px-1
                         "
                         style={{
                           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
@@ -502,113 +510,118 @@ export default function AddForm({
 
                     {/* Folder Color Picker */}
                     <div className="relative" ref={colorMenuRef}>
-                      <button
-                        onClick={handleColorButtonClick}
-                        className="
-                          group relative w-12 h-12 rounded-xl border-2 border-gray-600/50 
-                          hover:border-gray-500/50 transition-all duration-200 overflow-hidden
-                          hover:scale-110 hover:shadow-lg
-                        "
-                        style={{ 
-                          backgroundColor: folderColor,
-                          boxShadow: `0 4px 12px ${folderColor}40`
-                        }}
-                        title="Choose folder color"
-                      >
-                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                        <Palette className="absolute inset-0 w-4 h-4 m-auto text-white/80 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                      </button>
+ <button
+   onClick={handleColorButtonClick}
+   className="
+     group relative w-12 h-12 rounded-xl border-2 border-gray-600/50 
+     hover:border-gray-500/50 transition-all duration-200 overflow-hidden
+     hover:scale-110 hover:shadow-lg
+   "
+   style={{ 
+     backgroundColor: folderColor,
+     boxShadow: `0 4px 12px ${folderColor}40`
+   }}
+   title="Choose folder color"
+ >
+   <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+   <Palette className="absolute inset-0 w-4 h-4 m-auto text-white/80 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+ </button>
 
-                      {/* Enhanced Color Menu for Folder */}
-                      {showColorMenu && !showCustomPicker && (
-                        <div 
-                          className="
-                            absolute right-0 mt-3 p-4 bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 
-                            rounded-2xl shadow-2xl z-10 min-w-[240px] overflow-hidden
-                          "
-                          style={{
-                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-                          }}
-                        >
-                          {/* Menu gradient background */}
-                          <div 
-                            className="absolute inset-0 opacity-5"
-                            style={{
-                              background: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 50%, #f59e0b 100%)'
-                            }}
-                          />
-                          
-                          <div className="relative z-10">
-                            <div className="flex items-center gap-2 mb-3">
-                              <Palette className="w-4 h-4 text-purple-400" />
-                              <span className="text-sm font-medium text-white">Choose Color</span>
-                            </div>
-                            <div className="grid grid-cols-4 gap-3">
-                              {COLORS.map((color) => (
-                                <button
-                                  key={color.value}
-                                  onClick={() => {
-                                    setFolderColor(color.value);
-                                    setShowColorMenu(false);
-                                  }}
-                                  style={{ backgroundColor: color.value }}
-                                  className={`
-                                    group relative w-10 h-10 rounded-xl border-2 transition-all duration-200 
-                                    hover:scale-110 hover:shadow-lg overflow-hidden
-                                    ${folderColor === color.value
-                                      ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900 border-white/50"
-                                      : "border-gray-600/30 hover:border-gray-500/50"
-                                    }
-                                  `}
-                                  title={color.name}
-                                >
-                                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                                  {folderColor === color.value && (
-                                    <Check className="absolute inset-0 w-4 h-4 m-auto text-white" />
-                                  )}
-                                </button>
-                              ))}
-                              
-                              {/* Custom Color Picker Button */}
-                              <button
-                                onClick={() => {
-                                  setShowCustomPicker(true);
-                                  setShowColorMenu(false);
-                                }}
-                                className="
-                                  group relative w-10 h-10 rounded-xl border-2 border-gray-600/50 
-                                  flex items-center justify-center transition-all duration-200 
-                                  hover:border-purple-500/50 hover:scale-110 hover:shadow-lg
-                                  bg-gradient-to-br from-purple-500/20 to-pink-500/20
-                                "
-                                title="Custom color"
-                              >
-                                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl" />
-                                <Wand2 className="w-4 h-4 text-purple-400 relative z-10" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+ {/* Enhanced Color Menu for Folder */}
+ {showColorMenu && !showCustomPicker && createPortal(
+   <div 
+     className="
+       fixed bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 
+       rounded-2xl shadow-2xl z-[9999] min-w-[240px] overflow-hidden p-4
+     "
+     style={{
+       top: '50%',
+       left: '50%',
+       transform: 'translate(5%, -50%)',
+       boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+     }}
+   >
+     {/* Menu gradient background */}
+     <div 
+       className="absolute inset-0 opacity-5"
+       style={{
+         background: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 50%, #f59e0b 100%)'
+       }}
+     />
+     
+     <div className="relative z-10">
+       <div className="flex items-center gap-2 mb-3">
+         <Palette className="w-4 h-4 text-purple-400" />
+         <span className="text-sm font-medium text-white">Choose Color</span>
+       </div>
+       <div className="grid grid-cols-4 gap-3">
+         {COLORS.map((color) => (
+           <button
+             key={color.value}
+             onClick={() => {
+               setFolderColor(color.value);
+               setShowColorMenu(false);
+             }}
+             style={{ backgroundColor: color.value }}
+             className={`
+               group relative w-10 h-10 rounded-xl border-2 transition-all duration-200 
+               hover:scale-110 hover:shadow-lg overflow-hidden
+               ${folderColor === color.value
+                 ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900 border-white/50"
+                 : "border-gray-600/30 hover:border-gray-500/50"
+               }
+             `}
+             title={color.name}
+           >
+             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+             {folderColor === color.value && (
+               <Check className="absolute inset-0 w-4 h-4 m-auto text-white" />
+             )}
+           </button>
+         ))}
+         
+         {/* Custom Color Picker Button */}
+         <button
+           onClick={(e) => {
+              e.stopPropagation();
+             setShowCustomPicker(true);
+             setShowColorMenu(false);
+           }}
+           className="
+             group relative w-10 h-10 rounded-xl border-2 border-gray-600/50 
+             flex items-center justify-center transition-all duration-200 
+             hover:border-purple-500/50 hover:scale-110 hover:shadow-lg
+             bg-gradient-to-br from-purple-500/20 to-pink-500/20
+           "
+           title="Custom color"
+         >
+           <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl" />
+           <Wand2 className="w-4 h-4 text-purple-400 relative z-10" />
+         </button>
+       </div>
+     </div>
+   </div>,
+   document.body
+ )}
 
-                      {showCustomPicker && createPortal(
-                        <div className="fixed" style={{
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          zIndex: 9999
-                        }}
-                        ref={customColorPickerRef}
-                        >
-                          <CustomColorPicker
-                            color={folderColor}
-                            onChange={setFolderColor}
-                            onClose={() => setShowCustomPicker(false)}
-                          />
-                        </div>,
-                        document.body
-                      )}
-                    </div>
+ {showCustomPicker && createPortal(
+   <div className="fixed" style={{
+     top: '50%',
+     left: '50%',
+     transform: 'translate(-50%, -50%)',
+     zIndex: 9999
+   }}
+   ref={customColorPickerRef}
+   >
+     <CustomColorPicker
+       color={folderColor}
+       onChange={setFolderColor}
+       onClose={() => setShowCustomPicker(false)}
+     />
+   </div>,
+   document.body
+ )}
+</div>
                   </div>
                 </div>
               </>

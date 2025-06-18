@@ -169,6 +169,7 @@ export default function ToDoWidget({
             isDragging={false}
             onMouseDown={() => {}}
             onClick={() => {}}
+            editTask={() => {}}
             isSelected={false}
           />
         </div>
@@ -209,6 +210,8 @@ export default function ToDoWidget({
             onTaskDragStart={handleDragStartManual}
             onTaskClick={handleTaskClick}
             onFolderContainerClick={handleContainerClick}
+            editTask={dataHandlers.editTask}
+            editFolder={dataHandlers.editFolder}
           />
         </div>
 

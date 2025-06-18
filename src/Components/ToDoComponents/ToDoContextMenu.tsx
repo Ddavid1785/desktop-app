@@ -100,27 +100,23 @@ export default function ToDoContextMenu({ data, folders, handlers, onClose }: To
   const getAvailableFolders = () => {
     if(data?.type !== 'task') return [];
     
-    const available = folders.filter((f) => f.id !== data.folderId);
-    if (data.folderId && data.folderId !== "ungrouped") {
-      available.unshift({ id: "ungrouped", name: "Ungrouped Tasks" } as any);
-    }
-    return available;
+    return folders.filter((f) => f.id !== data.folderId);
   };
 
   const getContextMenuItems = () => {
     if (!data) return [];
     if (data.type === "task") {
       return [
-        { id: "toggle-complete", text: data.isCompleted ? "Mark as Incomplete" : "Mark as Complete", icon: data.isCompleted ? Circle : CheckCircle, textColor: data.isCompleted ? "text-gray-300" : "text-green-400", onClick: () => handlers.toggleTaskCompletion(data.taskId!, data.folderId || "ungrouped") },
-        { id: "edit", text: "Edit Task", icon: Edit, textColor: "text-blue-400", onClick: () => handlers.editTask(data.taskId!, data.folderId || "ungrouped") },
-        { id: "duplicate", text: "Duplicate Task", icon: Copy, textColor: "text-purple-400", onClick: () => handlers.duplicateTask(data.taskId!, data.folderId || "ungrouped") },
+        { id: "toggle-complete", text: data.isCompleted ? "Mark as Incomplete" : "Mark as Complete", icon: data.isCompleted ? Circle : CheckCircle, textColor: data.isCompleted ? "text-gray-300" : "text-green-400", onClick: () => handlers.toggleTaskCompletion(data.taskId!, data.folderId!) },
+        { id: "edit", text: "Edit Task", icon: Edit, textColor: "text-blue-400", onClick: () => handlers.editTask(data.taskId!, data.folderId!, "no provided yet", "no provided yet") },
+        { id: "duplicate", text: "Duplicate Task", icon: Copy, textColor: "text-purple-400", onClick: () => handlers.duplicateTask(data.taskId!, data.folderId!) },
         { id: "move", text: "Move to Folder", icon: FolderOpen, textColor: "text-yellow-400", hasSubmenu: true },
-        { id: "delete", text: "Delete Task", icon: Trash2, textColor: "text-red-400", onClick: () => handlers.deleteTask(data.taskId!, data.folderId || "ungrouped") },
+        { id: "delete", text: "Delete Task", icon: Trash2, textColor: "text-red-400", onClick: () => handlers.deleteTask(data.taskId!, data.folderId!) },
       ];
     } else if (data.type === "folder") {
       return [
         { id: "toggle-visibility", text: data.folder_visible ? "Hide Folder" : "Show Folder", icon: data.folder_visible ? EyeOff : Eye, textColor: "text-blue-400", onClick: () => handlers.toggleFolderVisibility(data.folderId!) },
-        { id: "edit", text: "Edit Folder", icon: Edit, textColor: "text-blue-400", onClick: () => handlers.editFolder(data.folderId!) },
+        { id: "edit", text: "Edit Folder", icon: Edit, textColor: "text-blue-400", onClick: () => handlers.editFolder(data.folderId!, "no provided yet", "no provided yet") },
         { id: "duplicate", text: "Duplicate Folder", icon: Copy, textColor: "text-purple-400", onClick: () => handlers.duplicateFolder(data.folderId!) },
         { id: "delete", text: "Delete Folder", icon: Trash2, textColor: "text-red-400", onClick: () => handlers.deleteFolder(data.folderId!) },
       ];
@@ -173,7 +169,7 @@ export default function ToDoContextMenu({ data, folders, handlers, onClose }: To
       {showFolderSubmenu && data?.type === "task" && createPortal(
         <div 
           ref={subMenuRef} 
-          className="fixed z-[60] bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-2xl py-2 min-w-48 animate-in fade-in-0 zoom-in-95 duration-200"
+          className="fixed z-[60] bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-2xl py-2 px-1 min-w-48 animate-in fade-in-0 zoom-in-95 duration-200"
           style={{ 
             left: submenuPosition.x, 
             top: submenuPosition.y,
@@ -190,14 +186,10 @@ export default function ToDoContextMenu({ data, folders, handlers, onClose }: To
                   onClick={() => handleFolderSelect(folder.id)} 
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-800/60 text-left transition-all duration-150 hover:translate-x-1 group"
                 >
-                  {folder.id === 'ungrouped' ? (
-                    <Circle size={16} className="text-green-400 group-hover:scale-110 transition-transform" />
-                  ) : (
-                    <Folder size={16} style={{ color: folder.colour }} className="group-hover:scale-110 transition-transform" />
-                  )}
+                  <Folder size={16} style={{ color: folder.colour }} className="group-hover:scale-110 transition-transform" />
                   <span 
                     className="font-medium group-hover:text-white transition-colors"
-                    style={{ color: folder.id === 'ungrouped' ? '#10b981' : folder.colour }}
+                    style={{ color: folder.colour }}
                   >
                     {folder.name}
                   </span>

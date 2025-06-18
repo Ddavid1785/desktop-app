@@ -182,11 +182,29 @@ fn duplicate_folder(
 }
 
 #[command]
-fn rename_task(task_id: String, folder_id: String, new_name: String) -> Result<(), String> {
+fn edit_task(task_id: String, folder_id: String, new_text: String, new_colour: String) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
     let target_vec: &mut Vec<Task> = find_task_array(&mut folder_data, folder_id)?;
     let target_task = find_task(target_vec, task_id)?;
-    target_task.text = new_name;
+    target_task.text = new_text;
+    target_task.colour = new_colour;
+    write_to_task_json(folder_data)?;
+    Ok(())
+}
+
+#[command]
+fn edit_folder(folder_id: String, new_name: String, new_colour: String) -> Result<(), String> {
+    let mut folder_data = fetch_task_data()?;
+    if let Some(found) = folder_data
+    .iter_mut()
+    .find(|folder| folder.id == folder_id)
+{
+    found.name = new_name;
+    found.colour = new_colour;
+}else {
+    return Err("Couldnt find folder with that id while editing".into());
+}
+
     write_to_task_json(folder_data)?;
     Ok(())
 }
@@ -262,12 +280,13 @@ pub fn run() {
             complete_task,
             delete_task,
             move_task_to_folder,
-            rename_task,
+            edit_task,
             toggle_visability_folder,
             delete_tasks_folder,
             duplicate_task,
             duplicate_folder,
-            move_task_order
+            move_task_order,
+            edit_folder
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

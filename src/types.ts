@@ -36,14 +36,14 @@ export interface TaskDataHandlers {
   toggleTaskCompletion: (taskId: string, folderId: string) => void;
   deleteTask: (taskId: string, folderId: string) => void;
   addTask: (taskInput: Omit<Task, "id">, folderId: string) => void;
-  editTask: (taskId: string, folderId: string) => void;
+  editTask: (taskId: string, folderId: string, newText: string, newColour: string) => void;
   duplicateTask: (taskId: string, folderId: string) => void;
   
   // Folder-specific operations
   addFolder: (folderName: string, folderColor: string) => void;
   deleteFolder: (folderId: string) => void;
   toggleFolderVisibility: (folderId: string) => void;
-  editFolder: (folderId: string) => void;
+  editFolder: (folderId: string, newName: string, newColour: string) => void;
   duplicateFolder: (folderId: string) => void;
 
   // Cross-cutting operations

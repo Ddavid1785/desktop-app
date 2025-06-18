@@ -263,6 +263,65 @@ const moveTaskToFolderAndReorder = async (
     }
   };
 
+  const editTask = async (
+    taskId: string,
+    folderId: string,
+    newText: string,
+    newColour: string
+  ) => {
+    try {
+      // 1. Call the backend to save the change permanently
+      await invoke("edit_task", { taskId, folderId, newText, newColour });
+
+      // 2. Update the local state for an instant UI change (optimistic update)
+      setTaskData((prevData) =>
+        prevData.map((folder) => {
+          if (folder.id === folderId) {
+            return {
+              ...folder,
+              tasks: folder.tasks.map((task) => {
+                if (task.id === taskId) {
+                  return { ...task, text: newText, colour: newColour };
+                }
+                return task;
+              }),
+            };
+          }
+          return folder;
+        })
+      );
+      showToast("Task updated successfully!", "success");
+    } catch (error) {
+      console.error("Failed to edit task:", error);
+      showToast("Failed to update task", "error");
+    }
+  };
+
+  const editFolder = async (
+    folderId: string,
+    newName: string,
+    newColour: string
+  ) => {
+    try {
+      // 1. Call the backend
+      await invoke("edit_folder", { folderId, newName, newColour });
+
+      // 2. Optimistic update for the UI
+      setTaskData((prevData) =>
+        prevData.map((folder) => {
+          if (folder.id === folderId) {
+            return { ...folder, name: newName, colour: newColour };
+          }
+          return folder;
+        })
+      );
+      showToast("Folder updated successfully!", "success");
+    } catch (error) {
+      console.error("Failed to edit folder:", error);
+      showToast("Failed to update folder", "error");
+    }
+  };
+  
   // Create the final handlers object that matches the TaskDataHandlers interface
   const dataHandlers: TaskDataHandlers = {
     toggleTaskCompletion,
@@ -270,12 +329,12 @@ const moveTaskToFolderAndReorder = async (
     addTask,
     reorderTask,
     moveTaskToFolderAndReorder,
-    editTask: (taskId, folderId) => showToast("Rename feature coming soon!", "info"),
+    editTask,
     duplicateTask,
     addFolder,
     deleteFolder,
     toggleFolderVisibility,
-    editFolder: (folderId) => showToast("Rename feature coming soon!", "info"),
+    editFolder,
     duplicateFolder,
     moveTaskToFolder,
   };

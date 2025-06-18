@@ -53,7 +53,7 @@ export default function ToDoActionButtons({
             }}
             className={`
               group flex-1 relative overflow-hidden p-3 rounded-xl text-sm font-medium
-              transition-all duration-300 flex items-center justify-center gap-2
+              transition-all duration-300 flex items-center justify-center gap-2 hover:cursor-pointer
               ${taskButtonActive
                 ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/25 scale-105"
                 : "bg-gray-800/60 border border-gray-700/50 text-gray-300 hover:text-white hover:bg-gray-700/60 hover:border-gray-600/50 hover:scale-105"
@@ -100,7 +100,7 @@ export default function ToDoActionButtons({
               }
             }}
             className={`
-              group relative overflow-hidden p-3 rounded-xl text-sm font-medium
+              group relative overflow-hidden p-3 rounded-xl text-sm font-medium hover:cursor-pointer
               transition-all duration-300 flex items-center justify-center gap-2 min-w-[100px]
               ${folderButtonActive
                 ? "bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/25 scale-105"

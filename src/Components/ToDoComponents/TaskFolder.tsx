@@ -1,7 +1,24 @@
-import { ChevronDown, ChevronRight, Folder, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Folder, Trash2, Edit, Save, X, Palette, Wand2, Check } from "lucide-react";
 import { ContextMenuData, TaskFolder, Task, DragData } from "../../types";
 import TaskComponent from "./Task";
 import { DropTarget } from "../../Hooks/DragAndDropHook";
+import { useState, useRef } from "react";
+import CustomColorPicker from "../ColorPicker";
+import { createPortal } from "react-dom";
+
+const COLORS = [
+  { name: "Default", value: "#8b5cf6" }, // purple-600
+  { name: "Blue", value: "#2563eb" },    // blue-600
+  { name: "Green", value: "#16a34a" },   // green-600
+  { name: "Purple", value: "#9333ea" },  // purple-600
+  { name: "Pink", value: "#db2777" },    // pink-600
+  { name: "Orange", value: "#ea580c" },  // orange-600
+  { name: "Teal", value: "#0d9488" },    // teal-600
+  { name: "Indigo", value: "#4f46e5" },  // indigo-600
+  { name: "Cyan", value: "#0891b2" },    // cyan-600
+  { name: "Rose", value: "#e11d48" },    // rose-600
+  { name: "Amber", value: "#d97706" },   // amber-600
+];
 
 export default function TaskFolderComponent({
   folder,
@@ -18,6 +35,8 @@ export default function TaskFolderComponent({
   selectedTaskId,
   selectedFolderId,
   dropTarget,
+  editTask,
+  editFolder,
 }: {
   folder: TaskFolder;
   toggleFolderVisibility: (folderId: string) => void;
@@ -39,7 +58,16 @@ export default function TaskFolderComponent({
   selectedTaskId: string | null;
   selectedFolderId: string | null;
   dropTarget: DropTarget | null;
+  editTask: (taskId: string, folderId: string, newText: string, newColour: string) => void;
+  editFolder: (folderId: string, newName: string, newColour: string) => void;
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedFolder, setEditedFolder] = useState<{name: string, colour: string}>({name: folder.name, colour: folder.colour});
+  const [showColorMenu, setShowColorMenu] = useState(false);
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const colorButtonRef = useRef<HTMLButtonElement>(null);
+
   const completedTasks = folder.tasks.filter((task) => task.completed).length;
   const totalTasks = folder.tasks.length;
   const remainingTasks = totalTasks - completedTasks;
@@ -59,8 +87,54 @@ export default function TaskFolderComponent({
     const target = e.target as HTMLElement;
     const isClickOnTask = target.closest('[data-task-id]');
     
-    if (!isClickOnTask) {
+    if (!isClickOnTask && !isEditing) {
       onContainerClick(folder.id);
+    }
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsEditing(true);
+    setEditedFolder({name: folder.name, colour: folder.colour});
+    // Focus the input after a brief delay to ensure it's rendered
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 10);
+  };
+
+  const handleSaveEdit = () => {
+    if (editedFolder.name.trim()) {
+      editFolder(folder.id, editedFolder.name.trim(), editedFolder.colour);
+    }
+    setIsEditing(false);
+    setShowColorMenu(false);
+    setShowCustomPicker(false);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setShowColorMenu(false);
+    setShowCustomPicker(false);
+    setEditedFolder({name: folder.name, colour: folder.colour});
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
+
+  const handleColorSelect = (color: string) => {
+    setEditedFolder({...editedFolder, colour: color});
+    setShowColorMenu(false);
+  };
+
+  const handleToggleVisibility = (e: React.MouseEvent) => {
+    if (!isEditing) {
+      toggleFolderVisibility(folder.id);
     }
   };
 
@@ -70,7 +144,7 @@ export default function TaskFolderComponent({
   const shouldShowEmptyState = folder.tasks.length === 0;
   const isDragActive = draggedTask !== null;
 
-  const folderColor = folder.colour || '#8b5cf6';
+  const folderColor = isEditing ? editedFolder.colour || '#8b5cf6' : folder.colour || '#8b5cf6';
 
   return (
     <div
@@ -86,12 +160,12 @@ export default function TaskFolderComponent({
         }
         ${isCurrentlyDragOver ? "ring-2 ring-[var(--folder-color)]/40" : ""}
       `}
-      onContextMenu={handleContextMenu}
+      onContextMenu={isEditing ? undefined : handleContextMenu}
     >
-      {/* Enhanced header with better color integration */}
+      {/* Enhanced header with editing capability */}
       <div
         className="group flex items-center gap-3 p-3 transition-all cursor-pointer relative overflow-hidden"
-        onClick={() => toggleFolderVisibility(folder.id)}
+        onClick={handleToggleVisibility}
         data-folder-drop-id={folder.id}
         style={{
           background: `linear-gradient(135deg, ${folderColor}08 0%, ${folderColor}04 50%, transparent 100%)`
@@ -124,28 +198,232 @@ export default function TaskFolderComponent({
         </div>
         
         <div className="flex-1 min-w-0">
-          {/* Enhanced folder name with subtle color accent */}
+          {/* Enhanced folder name with editing capability */}
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-medium text-white truncate group-hover:text-gray-100 transition-colors">
-              {folder.name}
-            </h3>
-            {/* Small colored dot as accent */}
-            <div 
-              className="w-1.5 h-1.5 rounded-full opacity-60 group-hover:opacity-80 transition-opacity"
-              style={{ backgroundColor: folderColor }}
-            />
+            {isEditing ? (
+              <input
+                ref={inputRef}
+                type="text"
+                value={editedFolder.name}
+                onChange={(e) => setEditedFolder({...editedFolder, name: e.target.value})}
+                onKeyDown={handleKeyDown}
+                onClick={(e) => e.stopPropagation()}
+                className="
+                  flex-1 bg-gray-800/50 border border-gray-600 rounded px-2 py-1 
+                  text-sm text-gray-100 focus:outline-none focus:border-blue-500
+                  focus:bg-gray-800/70 transition-all duration-200
+                "
+                placeholder="Enter folder name..."
+              />
+            ) : (
+              <>
+                <h3 className="text-sm font-medium text-white truncate group-hover:text-gray-100 transition-colors">
+                  {folder.name}
+                </h3>
+                {/* Small colored dot as accent */}
+                <div 
+                  className="w-1.5 h-1.5 rounded-full opacity-60 group-hover:opacity-80 transition-opacity"
+                  style={{ backgroundColor: folderColor }}
+                />
+              </>
+            )}
           </div>
         </div>
-        
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            deleteFolder(folder.id);
-          }}
-          className="opacity-0 hover:cursor-pointer group-hover:opacity-100 text-gray-500 hover:text-red-400 p-1 rounded-md hover:bg-gray-800 transition-all duration-200"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+
+        {/* Edit controls when editing */}
+        {isEditing && (
+          <div className="flex items-center gap-2 relative z-10">
+            {/* Color picker button */}
+            <div className="relative">
+              <button
+                ref={colorButtonRef}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowColorMenu(!showColorMenu);
+                }}
+                className="w-6 h-6 rounded border-2 border-gray-600 hover:border-gray-500 transition-colors duration-200"
+                style={{ backgroundColor: editedFolder.colour }}
+                title="Change color"
+              />
+              
+              {/* Color menu dropdown */}
+              {showColorMenu && !showCustomPicker && createPortal(
+                  <div 
+                  className="fixed inset-0 z-50"
+                  onClick={() => setShowColorMenu(false)}
+                >
+                  <div 
+                    className="
+                      absolute p-4 bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 
+                      rounded-2xl shadow-2xl z-10 w-60 overflow-hidden
+                    "
+                    style={{
+                      left: colorButtonRef.current?.getBoundingClientRect().left ? 
+                        colorButtonRef.current.getBoundingClientRect().left - 220 : 0,
+                      top: colorButtonRef.current?.getBoundingClientRect().bottom ? 
+                        colorButtonRef.current.getBoundingClientRect().bottom + 8 : 0,
+                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Menu gradient background */}
+                    <div 
+                      className="absolute inset-0 opacity-5"
+                      style={{
+                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%)'
+                      }}
+                    />
+                    
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Palette className="w-4 h-4 text-purple-400" />
+                        <span className="text-sm font-medium text-white">Choose Color</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-3">
+                        {COLORS.map((color) => (
+                          <button
+                            key={color.value}
+                            onClick={() => handleColorSelect(color.value)}
+                            style={{ backgroundColor: color.value }}
+                            className={`
+                              group relative w-10 h-10 rounded-xl border-2 transition-all duration-200 
+                              hover:scale-110 hover:shadow-lg overflow-hidden
+                              ${editedFolder.colour === color.value
+                                ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900 border-white/50"
+                                : "border-gray-600/30 hover:border-gray-500/50"
+                              }
+                            `}
+                            title={color.name}
+                          >
+                            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                            {editedFolder.colour === color.value && (
+                              <Check className="absolute inset-0 w-4 h-4 m-auto text-white" />
+                            )}
+                          </button>
+                        ))}
+                        
+                        {/* Custom Color Picker Button */}
+                        <button
+                          onClick={() => {
+                            setShowCustomPicker(true);
+                            setShowColorMenu(false);
+                          }}
+                          className="
+                            group relative w-10 h-10 rounded-xl border-2 border-gray-600/50 
+                            flex items-center justify-center transition-all duration-200 
+                            hover:border-purple-500/50 hover:scale-110 hover:shadow-lg
+                            bg-gradient-to-br from-purple-500/20 to-pink-500/20
+                          "
+                          title="Custom color"
+                        >
+                          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl" />
+                          <Wand2 className="w-4 h-4 text-purple-400 relative z-10" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>,
+                document.body
+              )}
+
+              {/* Custom color picker */}
+              {showCustomPicker && createPortal(
+                <div 
+                  className="fixed inset-0 z-50" 
+                  onClick={() => setShowCustomPicker(false)}
+                >
+                  <div 
+                    className="absolute z-50" 
+                    style={{ 
+                      left: colorButtonRef.current?.getBoundingClientRect().left ? 
+                        colorButtonRef.current.getBoundingClientRect().left - 250 : 0, 
+                      top: colorButtonRef.current?.getBoundingClientRect().bottom ? 
+                        colorButtonRef.current.getBoundingClientRect().bottom + 8 : 0
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <CustomColorPicker
+                      color={editedFolder.colour}
+                      onChange={(color) => setEditedFolder({...editedFolder, colour: color})}
+                      onClose={() => setShowCustomPicker(false)}
+                    />
+                  </div>
+                </div>,
+                document.body
+              )}
+            </div>  
+
+            {/* Save button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSaveEdit();
+              }}
+              className="
+                text-green-600 hover:text-green-400 transition-all duration-200 
+                p-1.5 rounded-md hover:bg-gray-800/60 hover:scale-110 hover:cursor-pointer
+                relative overflow-hidden group/btn focus:outline-none
+              "
+              title="Save changes"
+            >
+              <div className="absolute inset-0 bg-green-400/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-200 rounded-md" />
+              <Save className="w-4 h-4 relative z-10" />
+            </button>
+
+            {/* Cancel button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCancelEdit();
+              }}
+              className="
+                text-gray-500 hover:text-gray-400 transition-all duration-200 
+                p-1.5 rounded-md hover:bg-gray-800/60 hover:scale-110 hover:cursor-pointer
+                relative overflow-hidden group/btn focus:outline-none
+              "
+              title="Cancel editing"
+            >
+              <div className="absolute inset-0 bg-gray-400/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-200 rounded-md" />
+              <X className="w-4 h-4 relative z-10" />
+            </button>
+          </div>
+        )}
+
+        {/* Action buttons when not editing */}
+        {!isEditing && (
+          <div className="flex items-center gap-1">
+            {/* Edit button */}
+            <button
+              onClick={handleEditClick}
+              className="
+                opacity-0 group-hover:opacity-100 text-gray-500 hover:text-yellow-400 
+                transition-all duration-200 p-1.5 rounded-md hover:bg-gray-800/60 hover:scale-110
+                relative overflow-hidden group/btn focus:outline-none
+              "
+              title="Edit folder"
+            >
+              <div className="absolute inset-0 bg-yellow-400/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-200 rounded-md" />
+              <Edit className="w-4 h-4 relative z-10" />
+            </button>
+
+            {/* Delete button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteFolder(folder.id);
+              }}
+              className="
+                opacity-0 hover:cursor-pointer group-hover:opacity-100 text-gray-500 hover:text-red-400 
+                p-1.5 rounded-md hover:bg-gray-800/60 hover:scale-110 transition-all duration-200
+                relative overflow-hidden group/btn focus:outline-none
+              "
+              title="Delete folder"
+            >
+              <div className="absolute inset-0 bg-red-400/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-200 rounded-md" />
+              <Trash2 className="w-4 h-4 relative z-10" />
+            </button>
+          </div>
+        )}
         
         {/* Enhanced status indicator */}
         <div className="flex items-center gap-2">
@@ -247,6 +525,7 @@ export default function TaskFolderComponent({
                   isDragging={draggedTask?.taskId === task.id}
                   onClick={() => onTaskClick(task.id, folder.id)}
                   isSelected={selectedTaskId === task.id}
+                  editTask={editTask}
                 />
               ))
             )}

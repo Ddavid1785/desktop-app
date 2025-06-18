@@ -25,6 +25,8 @@ interface FolderListProps {
   dropTarget: DropTarget | null;
   onTaskClick: (taskId: string, folderId: string) => void;
   onFolderContainerClick: (folderId: string) => void;
+  editTask: (taskId: string, folderId: string, newText: string, newColour: string) => void;
+  editFolder: (folderId: string, newName: string, newColour: string) => void;
 }
 
 export default function FolderList({
@@ -38,6 +40,8 @@ export default function FolderList({
   dropTarget,
   onTaskClick,
   onFolderContainerClick,
+  editTask,
+  editFolder,
 }: FolderListProps) {
   // If there are no folders, this component renders nothing.
   if (folders.length === 0) {
@@ -63,6 +67,8 @@ export default function FolderList({
           draggedTask={draggedTask}
           selectedTaskId={selectedTaskId}
           selectedFolderId={selectedFolderId}
+          editTask={editTask}
+          editFolder={editFolder}
         />
       ))}
     </div>
