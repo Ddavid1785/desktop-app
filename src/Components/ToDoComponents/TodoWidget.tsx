@@ -94,8 +94,6 @@ export default function ToDoWidget({
     };
   }, []); // Empty dependency array means this runs once on mount and cleans up on unmount
 
-  const remainingTasks = taskData.ungrouped.filter((t) => !t.completed).length;
-
   // Context Menu Helper
   const handleContextMenuWithHandlers = (e: React.MouseEvent, data: ContextMenuData) => {
     e.stopPropagation();
@@ -176,9 +174,21 @@ export default function ToDoWidget({
           />
         </div>
       )}
-      <div className="absolute top-16 left-16 w-1/4" ref={widgetRef}>
 
+      {/* OPTION 1: Fixed position at top of widget */}
+      <div className="absolute top-16 left-16 w-1/4 flex flex-col" ref={widgetRef}>
+        {/* Action buttons at the top */}
+        <div className="sticky top-0 z-50 mb-4">
+          <ToDoActionButtons
+            setAddFormMode={setAddFormMode}
+            setShowAddForm={setShowAddForm}
+            addFormMode={addFormMode}
+            showAddForm={showAddForm}
+          />
+        </div>
 
+        {/* Content container with proper spacing */}
+        <div className="flex-1 space-y-4 pb-20"> {/* pb-20 to prevent overlap with floating buttons */}
           <UngroupedTaskList
             tasks={taskData.ungrouped}
             handlers={dataHandlers}
@@ -192,26 +202,19 @@ export default function ToDoWidget({
             selectedFolderId={selectedFolderId}
           />
 
-          {/* This action button part remains untouched */}
-          <ToDoActionButtons
-            setAddFormMode={setAddFormMode}
-            setShowAddForm={setShowAddForm}
-            addFormMode={addFormMode}
-            showAddForm={showAddForm}
+          <FolderList
+            folders={taskData.folders}
+            handlers={dataHandlers}
+            draggedTask={draggedTask}
+            dropTarget={dropTarget}
+            selectedTaskId={selectedTaskId}
+            selectedFolderId={selectedFolderId}
+            onContextMenu={handleContextMenuWithHandlers}
+            onTaskDragStart={handleDragStartManual}
+            onTaskClick={handleTaskClick}
+            onFolderContainerClick={handleContainerClick}
           />
-
-        <FolderList
-          folders={taskData.folders}
-          handlers={dataHandlers}
-          draggedTask={draggedTask}
-          dropTarget={dropTarget}
-          selectedTaskId={selectedTaskId}
-          selectedFolderId={selectedFolderId}
-          onContextMenu={handleContextMenuWithHandlers}
-          onTaskDragStart={handleDragStartManual}
-          onTaskClick={handleTaskClick}
-          onFolderContainerClick={handleContainerClick}
-        />
+        </div>
 
         <AddForm
           showAddForm={showAddForm}
@@ -227,6 +230,18 @@ export default function ToDoWidget({
           <KeyboardShortcutsHelp onClose={() => setShowKeyboardHelp(false)} />
         )}
       </div>
+
+      {/* OPTION 2: Fixed floating buttons at bottom-right of viewport (uncomment to use) */}
+      {/*
+      <div className="fixed bottom-6 right-6 z-50">
+        <ToDoActionButtons
+          setAddFormMode={setAddFormMode}
+          setShowAddForm={setShowAddForm}
+          addFormMode={addFormMode}
+          showAddForm={showAddForm}
+        />
+      </div>
+      */}
     </>
   );
 }

@@ -43,7 +43,6 @@ export default function TaskFolderComponent({
   const completedTasks = folder.tasks.filter((task) => task.completed).length;
   const totalTasks = folder.tasks.length;
   const remainingTasks = totalTasks - completedTasks;
-  const allTasksCompleted = totalTasks > 0 && remainingTasks === 0;
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
