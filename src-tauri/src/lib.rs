@@ -6,7 +6,6 @@ use std::io::Write;
 use std::path::PathBuf;
 use tauri::command;
 use types::Task;
-use types::TaskData;
 use types::TaskFolder;
 
 fn get_data_dir() -> PathBuf {
@@ -37,10 +36,7 @@ fn initialize_tasks_json() -> Result<(), String> {
     let metadata = tasks_file.metadata().map_err(|e| e.to_string())?;
     let len = metadata.len();
     if len == 0 {
-        let t = TaskData {
-            ungrouped: Vec::new(),
-            folders: Vec::new(),
-        };
+        let t = Vec::<TaskFolder>::new();
         let json = serde_json::to_string_pretty(&t).map_err(|e| e.to_string())?;
         tasks_file
             .write_all(json.as_bytes())
@@ -55,15 +51,14 @@ pub fn setup() -> Result<(), String> {
     Ok(())
 }
 
-fn find_task_array<'a>(folder_data: &'a mut TaskData, folder_id: String) -> &'a mut Vec<Task> {
+fn find_task_array<'a>(folder_data: &'a mut Vec<TaskFolder>, folder_id: String) -> Result<&'a mut Vec<Task>,String> {
     if let Some(found) = folder_data
-        .folders
         .iter_mut()
         .find(|folder| folder.id == folder_id)
     {
-        &mut found.tasks
-    } else {
-        &mut folder_data.ungrouped
+        Ok(&mut found.tasks)
+    }else {
+        return Err("Couldnt find folder with that id".into());
     }
 }
 
@@ -71,11 +66,11 @@ fn find_task<'a>(task_array: &'a mut Vec<Task>, task_id: String) -> Result<&'a m
     if let Some(found) = task_array.iter_mut().find(|task| task.id == task_id) {
         Ok(found)
     } else {
-        Err("Couldnt find task with that id".to_string())
+        Err("Couldnt find tasks with that id".to_string())
     }
 }
 
-fn write_to_task_json(folder_data: TaskData) -> Result<(), String> {
+fn write_to_task_json(folder_data: Vec<TaskFolder>) -> Result<(), String> {
     let file_path: PathBuf = get_tasks_file();
     let tasks_file = OpenOptions::new()
         .write(true)
@@ -87,13 +82,13 @@ fn write_to_task_json(folder_data: TaskData) -> Result<(), String> {
 }
 
 #[command]
-fn fetch_task_data() -> Result<TaskData, String> {
+fn fetch_task_data() -> Result<Vec<TaskFolder>, String> {
     let file_path: PathBuf = get_tasks_file();
     let tasks_file = OpenOptions::new()
         .read(true)
         .open(&file_path)
         .map_err(|e| e.to_string())?;
-    let task_data: TaskData = serde_json::from_reader(&tasks_file).map_err(|e| e.to_string())?;
+    let task_data: Vec<TaskFolder> = serde_json::from_reader(&tasks_file).map_err(|e| e.to_string())?;
     Ok(task_data)
 }
 
@@ -107,7 +102,7 @@ fn create_folder(folder_name: String, folder_id: String,folder_color:String) -> 
         tasks: Vec::new(),
     };
     let mut folder_data = fetch_task_data()?;
-    folder_data.folders.push(folder);
+    folder_data.push(folder);
     write_to_task_json(folder_data)?;
     Ok(())
 }
@@ -115,7 +110,7 @@ fn create_folder(folder_name: String, folder_id: String,folder_color:String) -> 
 #[command]
 fn create_task(t: Task, folder_id: String) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
-    let target_vec: &mut Vec<Task> = find_task_array(&mut folder_data, folder_id);
+    let target_vec: &mut Vec<Task> = find_task_array(&mut folder_data, folder_id)?;
     target_vec.push(t);
     write_to_task_json(folder_data)?;
     Ok(())
@@ -124,7 +119,7 @@ fn create_task(t: Task, folder_id: String) -> Result<(), String> {
 #[command]
 fn complete_task(task_id: String, folder_id: String) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
-    let target_vec: &mut Vec<Task> = find_task_array(&mut folder_data, folder_id);
+    let target_vec: &mut Vec<Task> = find_task_array(&mut folder_data, folder_id)?;
     let target_task = find_task(target_vec, task_id)?;
     target_task.completed = !target_task.completed;
     write_to_task_json(folder_data)?;
@@ -134,7 +129,7 @@ fn complete_task(task_id: String, folder_id: String) -> Result<(), String> {
 #[command]
 fn delete_task(task_id: String, folder_id: String) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
-    let target_vec: &mut Vec<Task> = find_task_array(&mut folder_data, folder_id);
+    let target_vec: &mut Vec<Task> = find_task_array(&mut folder_data, folder_id)?;
     target_vec.retain(|task| task.id != task_id);
     write_to_task_json(folder_data)?;
     Ok(())
@@ -143,7 +138,7 @@ fn delete_task(task_id: String, folder_id: String) -> Result<(), String> {
 #[command]
 fn duplicate_task(task_id: String, clone_task_id: String, folder_id: String) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
-    let target_vec: &mut Vec<Task> = find_task_array(&mut folder_data, folder_id);
+    let target_vec: &mut Vec<Task> = find_task_array(&mut folder_data, folder_id)?;
     if let Some(task_to_clone) = target_vec.iter_mut().find(|task| task.id == task_id) {
         let mut task = task_to_clone.clone();
         task.id = clone_task_id;
@@ -163,7 +158,6 @@ fn duplicate_folder(
 ) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
     if let Some(target_vec) = folder_data
-        .folders
         .iter_mut()
         .find(|folder| folder.id == folder_id)
     {
@@ -179,7 +173,7 @@ fn duplicate_folder(
         for (i, task) in clone_folder.tasks.iter_mut().enumerate() {
             task.id = task_clone_ids[i].clone();
         }
-        folder_data.folders.push(clone_folder);
+        folder_data.push(clone_folder);
     } else {
         return Err("Couldnt find folder to clone".to_string());
     }
@@ -190,7 +184,7 @@ fn duplicate_folder(
 #[command]
 fn rename_task(task_id: String, folder_id: String, new_name: String) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
-    let target_vec: &mut Vec<Task> = find_task_array(&mut folder_data, folder_id);
+    let target_vec: &mut Vec<Task> = find_task_array(&mut folder_data, folder_id)?;
     let target_task = find_task(target_vec, task_id)?;
     target_task.text = new_name;
     write_to_task_json(folder_data)?;
@@ -200,7 +194,7 @@ fn rename_task(task_id: String, folder_id: String, new_name: String) -> Result<(
 #[command]
 fn move_task_order(task_id: String, folder_id: String, new_index: usize) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
-    let target_vec: &mut Vec<Task> = find_task_array(&mut folder_data, folder_id);
+    let target_vec: &mut Vec<Task> = find_task_array(&mut folder_data, folder_id)?;
     if let Some(old_index) = target_vec.iter().position(|t| t.id == task_id) {
         let target_task = target_vec.remove(old_index);
         let final_index = new_index.min(target_vec.len());
@@ -216,7 +210,6 @@ fn move_task_order(task_id: String, folder_id: String, new_index: usize) -> Resu
 fn toggle_visability_folder(folder_id: String) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
     if let Some(target_folder) = folder_data
-        .folders
         .iter_mut()
         .find(|folder| folder.id == folder_id)
     {
@@ -231,7 +224,7 @@ fn toggle_visability_folder(folder_id: String) -> Result<(), String> {
 #[command]
 fn delete_tasks_folder(folder_id: String) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
-    folder_data.folders.retain(|folder| folder.id != folder_id);
+    folder_data.retain(|folder| folder.id != folder_id);
     write_to_task_json(folder_data)?;
     Ok(())
 }
@@ -243,7 +236,7 @@ fn move_task_to_folder(
     new_folder_id: String,
 ) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
-    let target_vec = find_task_array(&mut folder_data, folder_id);
+    let target_vec = find_task_array(&mut folder_data, folder_id)?;
 
     let task_pos = target_vec
         .iter()
@@ -251,7 +244,7 @@ fn move_task_to_folder(
         .ok_or("Couldn't find task with that id")?;
 
     let target_task = target_vec.remove(task_pos);
-    let new_target_vec = find_task_array(&mut folder_data, new_folder_id);
+    let new_target_vec = find_task_array(&mut folder_data, new_folder_id)?;
     new_target_vec.push(target_task);
 
     write_to_task_json(folder_data)?;

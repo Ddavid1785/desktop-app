@@ -142,7 +142,7 @@ export default function TaskComponent({
         } as React.CSSProperties}
         className={`
           group/task flex items-center gap-3 p-3 rounded-lg relative overflow-hidden
-          transition-all duration-200 border
+          transition-all duration-200 border focus:outline-none
           ${isDragging ? "opacity-0 scale-95" : "opacity-100 scale-100"}
           ${
             isDropTarget
@@ -154,7 +154,7 @@ export default function TaskComponent({
           ${!isDragging ? "cursor-grab active:cursor-grabbing" : ""}
           ${
             isSelected
-              ? "border-blue-500 outline-2 outline-blue-500/50 outline-offset-1"
+              ? "!border-blue-500 !outline-2 !outline-blue-500/50 !outline-offset-1 !outline"
               : ""
           }
         `}
@@ -163,6 +163,7 @@ export default function TaskComponent({
         onMouseMove={handleMouseMove}
         onClick={onClick}
         onContextMenu={handleContextMenu}
+        tabIndex={-1}
       >
         {/* Subtle gradient overlay */}
         <div 
@@ -189,6 +190,7 @@ export default function TaskComponent({
             className={`
               w-5 h-5 rounded-full border-2 flex items-center justify-center 
               transition-all duration-200 flex-shrink-0 relative overflow-hidden
+              focus:outline-none
               ${
                 task.completed
                   ? "bg-gradient-to-br from-green-500 to-green-600 border-green-500 shadow-lg shadow-green-500/25"
@@ -256,7 +258,7 @@ export default function TaskComponent({
             className="
               text-gray-500 hover:text-blue-400 transition-all duration-200 
               p-1.5 rounded-md hover:bg-gray-800/60 hover:scale-110
-              relative overflow-hidden group/btn
+              relative overflow-hidden group/btn focus:outline-none
             "
             title="Duplicate task"
           >
@@ -270,7 +272,7 @@ export default function TaskComponent({
             className="
               text-gray-500 hover:text-red-400 transition-all duration-200 
               p-1.5 rounded-md hover:bg-gray-800/60 hover:scale-110
-              relative overflow-hidden group/btn
+              relative overflow-hidden group/btn focus:outline-none
             "
             title="Delete task"
           >

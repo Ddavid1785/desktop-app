@@ -251,11 +251,18 @@ export default function AddForm({
     colour: "#111827",
   });
   const [newFolderName, setNewFolderName] = useState("");
-  const [selectedFolderId, setSelectedFolderId] = useState("ungrouped");
+  const [selectedFolderId, setSelectedFolderId] = useState(folders.length > 0 ? folders[0].id : "");
   const [folderColor, setFolderColor] = useState("#111827");
   const [showColorMenu, setShowColorMenu] = useState(false);
   const [showCustomPicker, setShowCustomPicker] = useState(false);
   const colorMenuRef = useRef<HTMLDivElement>(null);
+
+  // Update selectedFolderId when folders change
+  useEffect(() => {
+    if (folders.length > 0 && !selectedFolderId) {
+      setSelectedFolderId(folders[0].id);
+    }
+  }, [folders, selectedFolderId]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -299,7 +306,7 @@ export default function AddForm({
   const handleCancel = () => {
     setAddingTask({ text: "", completed: false, colour: "#111827" });
     setNewFolderName("");
-    setSelectedFolderId("ungrouped");
+    setSelectedFolderId("");
     setFolderColor("#111827");
     setShowColorMenu(false);
     setShowCustomPicker(false);
@@ -403,7 +410,6 @@ export default function AddForm({
                 onChange={(e) => setSelectedFolderId(e.target.value)}
                 className="w-full px-3 py-2 bg-black border border-gray-800 rounded-md text-white text-sm focus:outline-none focus:ring-1 focus:ring-gray-600 focus:border-gray-600"
               >
-                <option value="ungrouped">Tasks</option>
                 {folders.map((folder) => (
                   <option key={folder.id} value={folder.id}>
                     {folder.name}

@@ -13,11 +13,6 @@ export interface TaskFolder{
      tasks: Task[],
 }
 
-export interface TaskData {
-     ungrouped: Task[],
-     folders: TaskFolder[],
-}
-
 export interface DragData {
   taskId: string;
   currentFolderId: string; // "" for ungrouped

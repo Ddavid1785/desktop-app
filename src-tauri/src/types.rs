@@ -18,8 +18,3 @@ pub struct TaskFolder {
     pub tasks: Vec<Task>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct TaskData {
-    pub ungrouped: Vec<Task>,
-    pub folders: Vec<TaskFolder>,
-}

@@ -54,6 +54,16 @@ export default function TaskFolderComponent({
     });
   };
 
+  const handleContainerClick = (e: React.MouseEvent) => {
+    // Allow selection when clicking anywhere in the content area that's not a task
+    const target = e.target as HTMLElement;
+    const isClickOnTask = target.closest('[data-task-id]');
+    
+    if (!isClickOnTask) {
+      onContainerClick(folder.id);
+    }
+  };
+
   const isCurrentlyDragOver = dropTarget?.folderId === folder.id;
   const isFolderSelected = selectedFolderId === folder.id && !selectedTaskId;
 
@@ -67,14 +77,12 @@ export default function TaskFolderComponent({
       style={{ '--folder-color': folderColor } as React.CSSProperties}
       className={`
         bg-gray-950 rounded-lg mb-3 overflow-hidden 
-        transition-all duration-200 
-        outline-2 outline-offset-2
-        border border-gray-800 
+        transition-all duration-200 border
         border-l-4 
         ${
           isFolderSelected
-            ? "border-transparent outline-blue-500"
-            : "border-l-[var(--folder-color)] outline-transparent"
+            ? "!border-blue-500 !border-l-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.5)]"
+            : "border-gray-800 border-l-[var(--folder-color)]"
         }
         ${isCurrentlyDragOver ? "ring-2 ring-[var(--folder-color)]/40" : ""}
       `}
@@ -134,7 +142,7 @@ export default function TaskFolderComponent({
             e.stopPropagation();
             deleteFolder(folder.id);
           }}
-          className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 p-1 rounded-md hover:bg-gray-800 transition-all duration-200"
+          className="opacity-0 hover:cursor-pointer group-hover:opacity-100 text-gray-500 hover:text-red-400 p-1 rounded-md hover:bg-gray-800 transition-all duration-200"
         >
           <Trash2 className="w-4 h-4" />
         </button>
@@ -159,21 +167,22 @@ export default function TaskFolderComponent({
         </div>
       </div>
 
-      {/* Enhanced content area */}
+      {/* Enhanced content area with improved click handling */}
       {folder.visible && (
         <div
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              onContainerClick(folder.id);
-            }
-          }}
+          onClick={handleContainerClick}
           className={`
-            border-t transition-all duration-200
+            border-t transition-all duration-200 cursor-pointer
             max-h-48 overflow-y-auto no-scrollbar
             ${
               isCurrentlyDragOver
                 ? `bg-[var(--folder-color)]/15 border-[var(--folder-color)]/30`
                 : "bg-gray-950/50 border-gray-800"
+            }
+            ${
+              isFolderSelected && !selectedTaskId
+                ? "ring-1 ring-blue-500/30 bg-blue-950/10"
+                : ""
             }
           `}
           data-folder-drop-id={folder.id}
@@ -181,16 +190,25 @@ export default function TaskFolderComponent({
             minHeight: shouldShowEmptyState ? "4rem" : "auto",
             background: isCurrentlyDragOver 
               ? `linear-gradient(135deg, ${folderColor}15 0%, ${folderColor}08 100%)`
+              : isFolderSelected && !selectedTaskId
+              ? `linear-gradient(135deg, #3b82f610 0%, ${folderColor}03 100%)`
               : `linear-gradient(135deg, ${folderColor}03 0%, transparent 100%)`
           }}
         >
           <div className="p-3 pt-2 space-y-2">
             {shouldShowEmptyState ? (
-              <div className={`text-center py-4 text-sm h-16 flex items-center justify-center transition-colors ${
-                isDragActive && isCurrentlyDragOver 
-                  ? "text-gray-300 font-medium" 
-                  : "text-gray-600"
-              }`}>
+              <div 
+                className={`
+                  text-center py-4 text-sm h-16 flex items-center justify-center transition-colors cursor-pointer
+                  ${isDragActive && isCurrentlyDragOver 
+                    ? "text-gray-300 font-medium" 
+                    : isFolderSelected && !selectedTaskId
+                    ? "text-gray-400"
+                    : "text-gray-600"
+                  }
+                `}
+                onClick={handleContainerClick}
+              >
                 {isDragActive && isCurrentlyDragOver ? (
                   <div className="flex items-center gap-2">
                     <div 
@@ -198,6 +216,14 @@ export default function TaskFolderComponent({
                       style={{ backgroundColor: folderColor }}
                     />
                     Drop task here
+                  </div>
+                ) : isFolderSelected && !selectedTaskId ? (
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: folderColor }}
+                    />
+                    Folder selected - paste tasks here
                   </div>
                 ) : (
                   "No tasks in folder"

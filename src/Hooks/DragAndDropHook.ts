@@ -1,7 +1,7 @@
 // src/Hooks/useDragAndDrop.ts
 
 import { useState, useEffect, useRef } from "react";
-import { Task, TaskData } from "../types";
+import { Task, TaskFolder } from "../types";
 
 export interface DragData {
   taskId: string;
@@ -18,7 +18,7 @@ export interface DropTarget {
 }
 
 export function useDragAndDrop(
-  taskData: TaskData,
+  taskData: TaskFolder[],
   onMoveToFolder: (taskId: string, currentFolderId: string, newFolderId: string) => void,
   onReorderTask: (taskId: string, folderId: string, newIndex: number) => void,
   moveTaskToFolderAndReorder: (taskId: string, currentFolderId: string, newFolderId: string, newIndex: number) => void
@@ -124,9 +124,7 @@ export function useDragAndDrop(
           const targetFolderId = dropTarget.folderId;
           const isSameFolder = targetFolderId === draggedTask.currentFolderId;
           
-          const targetTaskList = targetFolderId === "ungrouped"
-            ? taskData.ungrouped
-            : taskData.folders.find(f => f.id === targetFolderId)?.tasks || [];
+          const targetTaskList = taskData.find(f => f.id === targetFolderId)?.tasks || [];
           
           let targetIndex = targetTaskList.findIndex(t => t.id === dropTarget.taskId);
           

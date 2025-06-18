@@ -2,10 +2,7 @@ import { useEffect, useRef } from "react";
 import { Task, TaskDataHandlers, TaskFolder } from "../types";
 
 interface KeyboardShortcutsProps {
-  taskData: {
-    ungrouped: Task[];
-    folders: TaskFolder[];
-  };
+  taskData: TaskFolder[];
   handlers:TaskDataHandlers;
   selectedTaskId: string | null;
   selectedFolderId: string | null;
@@ -42,11 +39,7 @@ export function useKeyboardShortcuts({
 
       const findSelectedTask = () => {
         if (!selectedTaskId) return null;
-        const ungroupedTask = taskData.ungrouped.find(
-          (t) => t.id === selectedTaskId
-        );
-        if (ungroupedTask) return { task: ungroupedTask, folderId: "ungrouped" };
-        for (const folder of taskData.folders) {
+        for (const folder of taskData) {
           const folderTask = folder.tasks.find((t) => t.id === selectedTaskId);
           if (folderTask) return { task: folderTask, folderId: folder.id };
         }
@@ -74,7 +67,7 @@ export function useKeyboardShortcuts({
       if (isCtrl && e.key.toLowerCase() === "v") {
         e.preventDefault();
         if (clipboardTask) {
-          const targetFolderId = selectedFolderId ?? "ungrouped";
+          const targetFolderId = selectedFolderId ?? "no id provided";
           // THE FIX: Use the 'completed' status from the copied task
           const newTask = {
             text: clipboardTask.task.text,
@@ -101,8 +94,8 @@ export function useKeyboardShortcuts({
             "success"
           );
           lastActionRef.current = "duplicate-task";
-        } else if (selectedFolderId && selectedFolderId !== "ungrouped") {
-          const folder = taskData.folders.find(
+        } else if (selectedFolderId) {
+          const folder = taskData.find(
             (f) => f.id === selectedFolderId
           );
           if (folder) {
@@ -122,8 +115,8 @@ export function useKeyboardShortcuts({
           handlers.deleteTask(selectedTask.task.id, selectedTask.folderId);
           onShowToast?.(`Deleted task: "${selectedTask.task.text}"`, "success");
           lastActionRef.current = "delete-task";
-        } else if (selectedFolderId && selectedFolderId !== "ungrouped") {
-          const folder = taskData.folders.find(
+        } else if (selectedFolderId) {
+          const folder = taskData.find(
             (f) => f.id === selectedFolderId
           );
           if (folder) {
@@ -172,7 +165,7 @@ export function useKeyboardShortcuts({
       if (isAlt && e.key.toLowerCase() === "n") {
         e.preventDefault();
         const quickTask = { text: "New Task", completed: false, colour: "#111827" };
-        const targetFolderId = selectedFolderId ?? "ungrouped";
+        const targetFolderId = selectedFolderId ?? "no id provided";
         handlers.addTask(quickTask, targetFolderId);
         onShowToast?.("Quick task added", "success");
         lastActionRef.current = "quick-add-task";

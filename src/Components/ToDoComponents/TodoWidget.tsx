@@ -9,7 +9,6 @@ import {
 } from "../../Hooks/KeyboardHook";
 import { useToast, ToastContainer } from "../ToastNotification";
 import { useDragAndDrop } from "../../Hooks/DragAndDropHook";
-import UngroupedTaskList from "./UngroupedTasks";
 import FolderList from "./FolderList";
 import { useTaskDataManager } from "../../Hooks/useTaskDataManager";
 import ToDoContextMenu from "./ToDoContextMenu";
@@ -105,7 +104,7 @@ export default function ToDoWidget({
     const menuContent = (
       <ToDoContextMenu
         data={data}
-        folders={taskData.folders}
+        folders={taskData}
         handlers={dataHandlers}
         onClose={handleCloseContextMenu}
       />
@@ -187,23 +186,19 @@ export default function ToDoWidget({
           />
         </div>
 
+        <AddForm
+          showAddForm={showAddForm}
+          addFormMode={addFormMode}
+          onClose={handleCloseAddForm}
+          onAddTask={handleAddTask}
+          onAddFolder={handleAddFolder}
+          folders={taskData}
+        />
+
         {/* Content container with proper spacing */}
         <div className="flex-1 space-y-4 pb-20"> {/* pb-20 to prevent overlap with floating buttons */}
-          <UngroupedTaskList
-            tasks={taskData.ungrouped}
-            handlers={dataHandlers}
-            draggedTask={draggedTask}
-            dropTarget={dropTarget}
-            selectedTaskId={selectedTaskId}
-            onContextMenu={handleContextMenuWithHandlers}
-            onTaskDragStart={handleDragStartManual}
-            onTaskClick={handleTaskClick}
-            onContainerClick={handleContainerClick}
-            selectedFolderId={selectedFolderId}
-          />
-
           <FolderList
-            folders={taskData.folders}
+            folders={taskData}
             handlers={dataHandlers}
             draggedTask={draggedTask}
             dropTarget={dropTarget}
@@ -215,15 +210,6 @@ export default function ToDoWidget({
             onFolderContainerClick={handleContainerClick}
           />
         </div>
-
-        <AddForm
-          showAddForm={showAddForm}
-          addFormMode={addFormMode}
-          onClose={handleCloseAddForm}
-          onAddTask={handleAddTask}
-          onAddFolder={handleAddFolder}
-          folders={taskData.folders}
-        />
 
         {/* Keyboard Shortcuts Help Modal */}
         {showKeyboardHelp && (
