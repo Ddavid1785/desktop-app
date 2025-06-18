@@ -2,39 +2,34 @@ import { useState } from "react";
 import "./App.css";
 import ToDoWidget from "./Components/ToDoComponents/TodoWidget";
 import ContextMenu from "./Components/ContextMenu";
-import { ContextMenuData } from "./types";
 
 export default function App() {
   const [contextMenu, setContextMenu] = useState<{
     show: boolean;
     x: number;
     y: number;
-    data: ContextMenuData | null;
-    handlers: any;
-    folders: any[]; // Add folders to context menu state
+    content: React.ReactNode | null; // It will hold the JSX for the menu's content
+    themeColor?: string;
   }>({
     show: false,
     x: 0,
     y: 0,
-    data: null,
-    handlers: {},
-    folders: [],
+    content: null,
+    themeColor: undefined,
   });
 
   const handleContextMenu = (
     e: React.MouseEvent,
-    data: ContextMenuData,
-    handlers: any,
-    folders: any[] = [] // Add folders parameter
+    menuContent: React.ReactNode,
+    themeColor?: string
   ) => {
     e.preventDefault();
     setContextMenu({
       show: true,
       x: e.clientX,
       y: e.clientY,
-      data,
-      handlers,
-      folders,
+      content: menuContent,
+      themeColor: themeColor,
     });
   };
 
@@ -43,8 +38,8 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white relative">
-      <ToDoWidget onContextMenu={handleContextMenu} />
+    <div className="min-h-screen bg-black text-white relative" onClick={handleCloseContextMenu}>
+      <ToDoWidget onContextMenu={handleContextMenu} handleCloseContextMenu={handleCloseContextMenu} />
       <div className="p-6 pt-20">
         <div className="text-center text-gray-600 mt-20">
           <p className="text-lg"></p>
@@ -57,10 +52,8 @@ export default function App() {
         show={contextMenu.show}
         x={contextMenu.x}
         y={contextMenu.y}
-        data={contextMenu.data}
         onClose={handleCloseContextMenu}
-        handlers={contextMenu.handlers}
-        folders={contextMenu.folders}
+        children={contextMenu.content}
       />
     </div>
   );

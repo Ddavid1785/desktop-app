@@ -28,8 +28,11 @@ export interface ContextMenuData {
   type: "task" | "folder";
   taskId?: string;
   folderId?: string;
-  folder_visible?: boolean;
+
+  // Optional properties for specific item states
   isCompleted?: boolean;
+  folder_visible?: boolean;
+  colour?: string; // The color of the item that was clicked
   tasks?: Task[];
 }
 

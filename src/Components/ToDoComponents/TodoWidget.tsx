@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { ContextMenuData, Task, TaskFolder } from "../../types";
+import { ContextMenuData, Task } from "../../types";
 import TaskComponent from "./Task";
 import AddForm from "./AddForm";
 import ToDoActionButtons from "./TodoActionButtons";
@@ -12,17 +12,19 @@ import { useDragAndDrop } from "../../Hooks/DragAndDropHook";
 import UngroupedTaskList from "./UngroupedTasks";
 import FolderList from "./FolderList";
 import { useTaskDataManager } from "../../Hooks/useTaskDataManager";
+import ToDoContextMenu from "./ToDoContextMenu";
+
+interface ToDoWidgetProps {
+  onContextMenu: (
+    e: React.MouseEvent, menuContent: React.ReactNode, themeColor?: string
+  ) => void;
+  handleCloseContextMenu: () => void;
+}
 
 export default function ToDoWidget({
   onContextMenu,
-}: {
-  onContextMenu: (
-    e: React.MouseEvent,
-    data: ContextMenuData,
-    handlers: any,
-    folders: TaskFolder[]
-  ) => void;
-}) {
+  handleCloseContextMenu,
+} : ToDoWidgetProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [addFormMode, setAddFormMode] = useState<"task" | "folder">("task");
 
@@ -95,11 +97,23 @@ export default function ToDoWidget({
   const remainingTasks = taskData.ungrouped.filter((t) => !t.completed).length;
 
   // Context Menu Helper
-  const handleContextMenuWithHandlers = (
-    e: React.MouseEvent,
-    data: ContextMenuData
-  ) => {
-    onContextMenu(e, data, dataHandlers, taskData.folders);
+  const handleContextMenuWithHandlers = (e: React.MouseEvent, data: ContextMenuData) => {
+    e.stopPropagation();
+
+    // The onClose function that we pass down to the menu content.
+    // It triggers the main App's global click handler to close the menu.
+
+    // We build the full JSX element here and pass it up to App.
+    const menuContent = (
+      <ToDoContextMenu
+        data={data}
+        folders={taskData.folders}
+        handlers={dataHandlers}
+        onClose={handleCloseContextMenu}
+      />
+    );
+
+    onContextMenu(e, menuContent, data.colour);
   };
 
   const handleAddTask = async (
@@ -163,32 +177,7 @@ export default function ToDoWidget({
         </div>
       )}
       <div className="absolute top-16 left-16 w-1/4" ref={widgetRef}>
-        {/* FIXED: Removed drop zone styling from outer container */}
-        <div
-          className={`
-            ungrouped-drop-zone bg-gray-950 border border-gray-800 rounded-lg p-4 shadow-2xl mb-4 
-            transition-colors duration-200 outline-2 outline-offset-2
-            ${
-              selectedFolderId === "ungrouped" && !selectedTaskId
-                ? "outline-blue-500"
-                : "outline-transparent"
-            }
-          `}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              handleContainerClick("ungrouped");
-            }
-          }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              Tasks
-            </h2>
-            <div className={`text-xs ${remainingTasks > 0 ? "text-gray-500" : "text-green-500"}`}>
-              {remainingTasks > 0 ? `${remainingTasks} remaining` : "All done"}
-            </div>
-          </div>
+
 
           <UngroupedTaskList
             tasks={taskData.ungrouped}
@@ -199,6 +188,8 @@ export default function ToDoWidget({
             onContextMenu={handleContextMenuWithHandlers}
             onTaskDragStart={handleDragStartManual}
             onTaskClick={handleTaskClick}
+            onContainerClick={handleContainerClick}
+            selectedFolderId={selectedFolderId}
           />
 
           {/* This action button part remains untouched */}
@@ -208,7 +199,6 @@ export default function ToDoWidget({
             addFormMode={addFormMode}
             showAddForm={showAddForm}
           />
-        </div>
 
         <FolderList
           folders={taskData.folders}

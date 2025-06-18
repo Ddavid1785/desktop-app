@@ -58,87 +58,109 @@ export default function TaskFolderComponent({
   const isCurrentlyDragOver = dropTarget?.folderId === folder.id;
   const isFolderSelected = selectedFolderId === folder.id && !selectedTaskId;
 
-  // Fixed: Simplified logic to prevent layout shifts during drag operations
   const shouldShowEmptyState = folder.tasks.length === 0;
   const isDragActive = draggedTask !== null;
 
-  // Get the color from folder.colour (assuming same format as task.colour)
   const folderColor = folder.colour || '#8b5cf6';
 
   return (
     <div
-      // STEP 1: Set the CSS variable on the parent element.
       style={{ '--folder-color': folderColor } as React.CSSProperties}
       className={`
         bg-gray-950 rounded-lg mb-3 overflow-hidden 
-        transition-colors duration-200 
+        transition-all duration-200 
         outline-2 outline-offset-2
         border border-gray-800 
         border-l-4 
         ${
           isFolderSelected
             ? "border-transparent outline-blue-500"
-            : "border-l-[var(--folder-color)] outline-transparent" // STEP 2: Use the variable for the left border color.
+            : "border-l-[var(--folder-color)] outline-transparent"
         }
-    `}
+        ${isCurrentlyDragOver ? "ring-2 ring-[var(--folder-color)]/40" : ""}
+      `}
       onContextMenu={handleContextMenu}
     >
-      {/* Header with color accents */}
+      {/* Enhanced header with better color integration */}
       <div
-        className={`group flex items-center gap-3 p-3 transition-all cursor-pointer ${
-          !folder.visible && isCurrentlyDragOver ? "bg-[var(--folder-color)]/20" : ""
-        }`}
-        style={{ 
-          backgroundColor: folder.colour ? `${folder.colour}10` : 'transparent',
-          '--hover-color': folder.colour ? `${folder.colour}20` : '#1f2937'
-        } as React.CSSProperties}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = folder.colour ? `${folder.colour}20` : '#1f2937';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = folder.colour ? `${folder.colour}10` : 'transparent';
-        }}
+        className="group flex items-center gap-3 p-3 transition-all cursor-pointer relative overflow-hidden"
         onClick={() => toggleFolderVisibility(folder.id)}
         data-folder-drop-id={folder.id}
+        style={{
+          background: `linear-gradient(135deg, ${folderColor}08 0%, ${folderColor}04 50%, transparent 100%)`
+        }}
       >
-        <button className="text-gray-400 hover:text-gray-200 transition-colors hover:cursor-pointer">
+        {/* Subtle animated accent bar */}
+        <div 
+          className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-2"
+          style={{ backgroundColor: folderColor }}
+        />
+        
+        <button className="text-gray-400 hover:text-gray-200 transition-colors hover:cursor-pointer ml-2">
           {folder.visible ? (
             <ChevronDown className="w-4 h-4" />
           ) : (
             <ChevronRight className="w-4 h-4" />
           )}
         </button>
-        <div
-          className={`text-[var(--folder-color)] ${folderColor === '#111827' ? 'text-white' : ''}`}
-        >
-          <Folder className="w-4 h-4" />
+        
+        {/* Enhanced folder icon with subtle glow effect */}
+        <div className="relative">
+          <Folder 
+            className="w-4 h-4 transition-all duration-200 group-hover:scale-110" 
+            style={{ color: folderColor }}
+          />
+          <div 
+            className="absolute inset-0 w-4 h-4 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-200 blur-sm"
+            style={{ backgroundColor: folderColor }}
+          />
         </div>
+        
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium text-white truncate">
-            {folder.name}
-          </h3>
+          {/* Enhanced folder name with subtle color accent */}
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-medium text-white truncate group-hover:text-gray-100 transition-colors">
+              {folder.name}
+            </h3>
+            {/* Small colored dot as accent */}
+            <div 
+              className="w-1.5 h-1.5 rounded-full opacity-60 group-hover:opacity-80 transition-opacity"
+              style={{ backgroundColor: folderColor }}
+            />
+          </div>
         </div>
+        
         <button
           onClick={(e) => {
             e.stopPropagation();
             deleteFolder(folder.id);
           }}
-          className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 p-1 rounded-md hover:bg-gray-800"
+          className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 p-1 rounded-md hover:bg-gray-800 transition-all duration-200"
         >
           <Trash2 className="w-4 h-4" />
         </button>
-        <div className={`text-xs w-16 text-right ${
-          remainingTasks > 0 
-            ? folderColor === '#111827' 
-              ? "text-white/70"
-              : "text-[var(--folder-color)]/70"
-            : "text-green-400/70"
-        }`}>
-          {remainingTasks > 0 ? `${remainingTasks} remaining` : "All done"}
+        
+        {/* Enhanced status indicator */}
+        <div className="flex items-center gap-2">
+          <div 
+            className={`w-2 h-2 rounded-full transition-all duration-200 ${
+              remainingTasks > 0 ? "opacity-40" : "opacity-80 animate-pulse"
+            }`}
+            style={{ 
+              backgroundColor: remainingTasks > 0 ? folderColor : '#10b981'
+            }}
+          />
+          <div className={`text-xs font-medium ${
+            remainingTasks > 0 
+              ? "text-gray-400 group-hover:text-gray-300"
+              : "text-green-400"
+          } transition-colors`}>
+            {remainingTasks > 0 ? `${remainingTasks} remaining` : "All done"}
+          </div>
         </div>
       </div>
 
-      {/* Content area with subtle color accent */}
+      {/* Enhanced content area */}
       {folder.visible && (
         <div
           onClick={(e) => {
@@ -147,48 +169,63 @@ export default function TaskFolderComponent({
             }
           }}
           className={`
-                border-t border-gray-800 p-3 pt-2 space-y-2 transition-all duration-200
-                max-h-48 overflow-y-auto no-scrollbar
-                ${
-                  isCurrentlyDragOver
-                    ? `bg-[var(--folder-color)]/20 ring-2 ring-[var(--folder-color)]/50` // Use variable for drag-over state
-                    : "bg-transparent"
-                }
-            `}
+            border-t transition-all duration-200
+            max-h-48 overflow-y-auto no-scrollbar
+            ${
+              isCurrentlyDragOver
+                ? `bg-[var(--folder-color)]/15 border-[var(--folder-color)]/30`
+                : "bg-gray-950/50 border-gray-800"
+            }
+          `}
           data-folder-drop-id={folder.id}
           style={{
             minHeight: shouldShowEmptyState ? "4rem" : "auto",
+            background: isCurrentlyDragOver 
+              ? `linear-gradient(135deg, ${folderColor}15 0%, ${folderColor}08 100%)`
+              : `linear-gradient(135deg, ${folderColor}03 0%, transparent 100%)`
           }}
         >
-          {shouldShowEmptyState ? (
-            <div className={`text-gray-600 text-center py-4 text-sm h-16 flex items-center justify-center ${
-              isDragActive && isCurrentlyDragOver ? `text-[var(--folder-color)]` : "" // Use variable for drag-over text
-            }`}>
-              {isDragActive && isCurrentlyDragOver
-                ? "Drop task here"
-                : "No tasks in folder"}
-            </div>
-          ) : (
-            folder.tasks.map((task, index) => (
-              <TaskComponent
-                key={task.id || `folder-${folder.id}-task-${task.id}-${index}`}
-                task={task}
-                folderId={folder.id}
-                duplicateTask={duplicateTask}
-                index={index}
-                toggleTaskCompletion={toggleTaskCompletion}
-                deleteTask={deleteTask}
-                onContextMenu={onContextMenu}
-                dropTarget={dropTarget}
-                onMouseDown={(element, clientX, clientY) =>
-                  onTaskDragStart(element, clientX, clientY, task, folder.id)
-                }
-                isDragging={draggedTask?.taskId === task.id}
-                onClick={() => onTaskClick(task.id, folder.id)}
-                isSelected={selectedTaskId === task.id}
-              />
-            ))
-          )}
+          <div className="p-3 pt-2 space-y-2">
+            {shouldShowEmptyState ? (
+              <div className={`text-center py-4 text-sm h-16 flex items-center justify-center transition-colors ${
+                isDragActive && isCurrentlyDragOver 
+                  ? "text-gray-300 font-medium" 
+                  : "text-gray-600"
+              }`}>
+                {isDragActive && isCurrentlyDragOver ? (
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-2 h-2 rounded-full animate-pulse"
+                      style={{ backgroundColor: folderColor }}
+                    />
+                    Drop task here
+                  </div>
+                ) : (
+                  "No tasks in folder"
+                )}
+              </div>
+            ) : (
+              folder.tasks.map((task, index) => (
+                <TaskComponent
+                  key={task.id || `folder-${folder.id}-task-${task.id}-${index}`}
+                  task={task}
+                  folderId={folder.id}
+                  duplicateTask={duplicateTask}
+                  index={index}
+                  toggleTaskCompletion={toggleTaskCompletion}
+                  deleteTask={deleteTask}
+                  onContextMenu={onContextMenu}
+                  dropTarget={dropTarget}
+                  onMouseDown={(element, clientX, clientY) =>
+                    onTaskDragStart(element, clientX, clientY, task, folder.id)
+                  }
+                  isDragging={draggedTask?.taskId === task.id}
+                  onClick={() => onTaskClick(task.id, folder.id)}
+                  isSelected={selectedTaskId === task.id}
+                />
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>
