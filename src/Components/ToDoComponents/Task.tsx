@@ -1,9 +1,10 @@
-import { useRef, useState } from "react";
-import { Check, Trash2, Copy, Edit, Save, X, Palette, Wand2 } from "lucide-react";
+import { useRef } from "react";
+import { Check, Trash2, Copy, Edit, CheckIcon, X, Palette, Wand2 } from "lucide-react";
 import { Task, ContextMenuData } from "../../types";
 import { DropTarget } from "../../Hooks/DragAndDropHook";
 import CustomColorPicker from "../ColorPicker";
 import { createPortal } from "react-dom";
+import { useEffect } from "react";
 
 const COLORS = [
   { name: "Default", value: "#111827" }, // gray-900
@@ -33,6 +34,12 @@ export default function TaskComponent({
   isSelected,
   dropTarget,
   editTask,
+  showColorMenu,
+  setShowColorMenu,
+  showCustomPicker,
+  setShowCustomPicker,
+  editingState,
+  setEditingState,
 }: {
   task: Task;
   folderId: string;
@@ -51,17 +58,38 @@ export default function TaskComponent({
   isSelected: boolean;
   dropTarget: DropTarget | null;
   editTask: (taskId: string, folderId: string, newText: string, newColour: string) => void;
+  showColorMenu: boolean;
+  setShowColorMenu: (show: boolean) => void;
+  showCustomPicker: boolean;
+  setShowCustomPicker: (show: boolean) => void;
+  editingState: {
+    type: 'task' | 'folder' | null;
+    id: string | null;
+    data: {
+      text?: string;
+      name?: string;
+      colour: string;
+    } | null;
+  };
+  setEditingState: (state: {
+    type: 'task' | 'folder' | null;
+    id: string | null;
+    data: {
+      text?: string;
+      name?: string;
+      colour: string;
+    } | null;
+  }) => void;
 }) {
   const dragStartTimer = useRef<number | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedTask, setEditedTask] = useState<{text: string, colour: string}>({text: task.text, colour: task.colour});
-  const [showColorMenu, setShowColorMenu] = useState(false);
-  const [showCustomPicker, setShowCustomPicker] = useState(false);
   const initialMousePos = useRef<{ x: number; y: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const colorButtonRef = useRef<HTMLButtonElement>(null);
   const DRAG_DELAY = 200;
   const DRAG_THRESHOLD = 5;
+
+  // Check if this task is currently being edited
+  const isCurrentlyEditing = editingState.type === 'task' && editingState.id === task.id;
 
   const clearDragTimer = () => {
     if (dragStartTimer.current) {
@@ -71,7 +99,7 @@ export default function TaskComponent({
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.button !== 0 || (e.target as HTMLElement).closest("button") || isEditing) {
+    if (e.button !== 0 || (e.target as HTMLElement).closest("button") || isCurrentlyEditing) {
       return;
     }
     clearDragTimer();
@@ -93,7 +121,7 @@ export default function TaskComponent({
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (dragStartTimer.current && initialMousePos.current && !isEditing) {
+    if (dragStartTimer.current && initialMousePos.current && !isCurrentlyEditing) {
       const dx = Math.abs(e.clientX - initialMousePos.current.x);
       const dy = Math.abs(e.clientY - initialMousePos.current.y);
       if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
@@ -135,8 +163,14 @@ export default function TaskComponent({
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    setIsEditing(true);
-    setEditedTask({text: task.text, colour: task.colour});
+    setEditingState({
+      type: 'task',
+      id: task.id,
+      data: {
+        text: task.text,
+        colour: task.colour || '#6366f1',
+      },
+    });
     // Focus the input after a brief delay to ensure it's rendered
     setTimeout(() => {
       inputRef.current?.focus();
@@ -144,19 +178,26 @@ export default function TaskComponent({
   };
 
   const handleSaveEdit = () => {
-    if (editedTask.text.trim()) {
-      editTask(task.id, folderId, editedTask.text.trim(), editedTask.colour);
+    if (editingState.data?.text?.trim()) {
+      editTask(task.id, folderId, editingState.data.text.trim(), editingState.data.colour);
     }
-    setIsEditing(false);
+    setEditingState({
+      type: null,
+      id: null,
+      data: null,
+    });
     setShowColorMenu(false);
     setShowCustomPicker(false);
   };
 
   const handleCancelEdit = () => {
-    setIsEditing(false);
     setShowColorMenu(false);
     setShowCustomPicker(false);
-    setEditedTask({text: task.text, colour: task.colour});
+    setEditingState({
+      type: null,
+      id: null,
+      data: null,
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -168,7 +209,14 @@ export default function TaskComponent({
   };
 
   const handleColorSelect = (color: string) => {
-    setEditedTask({...editedTask, colour: color});
+    setEditingState({
+      type: 'task',
+      id: task.id,
+      data: {
+        ...editingState.data,
+        colour: color,
+      },
+    });
     setShowColorMenu(false);
   };
 
@@ -178,13 +226,22 @@ export default function TaskComponent({
   
   // Enhanced color system
   const taskColor = task.colour || '#6366f1'; // Default to indigo if no color
-  const editedColor = editedTask.colour || '#6366f1';
+  const editedColor = editingState.data?.colour || '#6366f1';
   const completedColor = '#10b981'; // Green for completed tasks
+
+  useEffect(() => {
+    if (isCurrentlyEditing && editingState.id === task.id) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 10);
+    }
+  }, [isCurrentlyEditing, editingState.id, task.id]);
 
   return (
     <div className="relative group">
       {/* Enhanced drop indicator with glow effect */}
-      {isDropTarget && !isEditing && (
+      {isDropTarget && !isCurrentlyEditing && (
         <div
           className={`
             absolute left-0 right-0 h-1 rounded-full z-10
@@ -202,7 +259,7 @@ export default function TaskComponent({
         key={task.id || `task-${task.id}-${index}`}
         data-task-id={task.id}
         style={{ 
-          '--task-color': isEditing ? editedColor : taskColor,
+          '--task-color': isCurrentlyEditing ? editedColor : taskColor,
           '--completed-color': completedColor
         } as React.CSSProperties}
         className={`
@@ -210,15 +267,15 @@ export default function TaskComponent({
           transition-all duration-200 border focus:outline-none
           ${isDragging ? "opacity-0 scale-95" : "opacity-100 scale-100"}
           ${
-            isDropTarget && !isEditing
+            isDropTarget && !isCurrentlyEditing
               ? "ring-2 ring-blue-500/40 bg-blue-950/20 border-blue-500/30"
               : task.completed
               ? `bg-[var(--completed-color)]/10 border-[var(--completed-color)]/20 hover:bg-[var(--completed-color)]/15`
               : `bg-[var(--task-color)]/10 border-[var(--task-color)]/20 hover:bg-[var(--task-color)]/15 hover:border-[var(--task-color)]/30`
           }
-          ${!isDragging && !isEditing ? "cursor-grab active:cursor-grabbing" : ""}
+          ${!isDragging && !isCurrentlyEditing ? "cursor-grab active:cursor-grabbing" : ""}
           ${
-            isSelected && !isEditing
+            isSelected && !isCurrentlyEditing
               ? "!border-blue-500 !outline-2 !outline-blue-500/50 !outline-offset-1 !outline"
               : ""
           }
@@ -226,8 +283,8 @@ export default function TaskComponent({
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
-        onClick={isEditing ? undefined : onClick}
-        onContextMenu={isEditing ? undefined : handleContextMenu}
+        onClick={isCurrentlyEditing ? undefined : onClick}
+        onContextMenu={isCurrentlyEditing ? undefined : handleContextMenu}
         tabIndex={-1}
       >
         {/* Subtle gradient overlay */}
@@ -236,7 +293,7 @@ export default function TaskComponent({
           style={{
             background: task.completed 
               ? `linear-gradient(135deg, ${completedColor} 0%, transparent 70%)`
-              : `linear-gradient(135deg, ${isEditing ? editedColor : taskColor} 0%, transparent 70%)`
+              : `linear-gradient(135deg, ${isCurrentlyEditing ? editedColor : taskColor} 0%, transparent 70%)`
           }}
         />
 
@@ -244,7 +301,7 @@ export default function TaskComponent({
         <div 
           className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover/task:w-1.5"
           style={{ 
-            backgroundColor: task.completed ? completedColor : (isEditing ? editedColor : taskColor),
+            backgroundColor: task.completed ? completedColor : (isCurrentlyEditing ? editedColor : taskColor),
             opacity: task.completed ? 0.6 : 0.8
           }}
         />
@@ -263,13 +320,13 @@ export default function TaskComponent({
               }
             `}
             onClick={handleCheckboxClick}
-            disabled={isEditing}
+            disabled={isCurrentlyEditing}
           >
             {/* Subtle inner glow for unchecked state */}
             {!task.completed && (
               <div 
                 className="absolute inset-0.5 rounded-full opacity-20 transition-opacity duration-200 hover:opacity-30"
-                style={{ backgroundColor: isEditing ? editedColor : taskColor }}
+                style={{ backgroundColor: isCurrentlyEditing ? editedColor : taskColor }}
               />
             )}
             
@@ -284,12 +341,20 @@ export default function TaskComponent({
 
         {/* Enhanced task text or input field */}
         <div className="flex-1 min-w-0 relative z-10">
-          {isEditing ? (
+          {isCurrentlyEditing ? (
             <input
               ref={inputRef}
               type="text"
-              value={editedTask.text}
-              onChange={(e) => setEditedTask({...editedTask, text: e.target.value})}
+              value={editingState.data?.text || ''}
+              onChange={(e) => setEditingState({
+                type: 'task',
+                id: task.id,
+                data: {
+                  ...editingState.data,
+                  text: e.target.value,
+                  colour: editingState.data?.colour || '#6366f1',
+                },
+              })}
               onKeyDown={handleKeyDown}
               className="
                 w-full bg-gray-800/50 border border-gray-600 rounded px-2 py-1 
@@ -331,7 +396,7 @@ export default function TaskComponent({
         </div>
 
         {/* Color picker and edit controls */}
-        {isEditing && (
+        {isCurrentlyEditing && (
           <div className="flex items-center gap-2 relative z-10">
             {/* Color picker button */}
             <div className="relative">
@@ -385,7 +450,7 @@ export default function TaskComponent({
                             className={`
                               group relative w-10 h-10 rounded-xl border-2 transition-all duration-200 
                               hover:scale-110 hover:shadow-lg overflow-hidden
-                              ${editedTask.colour === color.value
+                              ${editingState.data?.colour === color.value
                                 ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900 border-white/50"
                                 : "border-gray-600/30 hover:border-gray-500/50"
                               }
@@ -393,7 +458,7 @@ export default function TaskComponent({
                             title={color.name}
                           >
                             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                            {editedTask.colour === color.value && (
+                            {editingState.data?.colour === color.value && (
                               <Check className="absolute inset-0 w-4 h-4 m-auto text-white" />
                             )}
                           </button>
@@ -441,7 +506,14 @@ export default function TaskComponent({
                   >
                     <CustomColorPicker
                       color={editedColor}
-                      onChange={(color) => setEditedTask({...editedTask, colour: color})}
+                      onChange={(color) => setEditingState({
+                        type: 'task',
+                        id: task.id,
+                        data: {
+                          ...editingState.data,
+                          colour: color,
+                        },
+                      })}
                       onClose={() => setShowCustomPicker(false)}
                     />
                   </div>
@@ -461,7 +533,7 @@ export default function TaskComponent({
               title="Save changes"
             >
               <div className="absolute inset-0 bg-green-400/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-200 rounded-md" />
-              <Save className="w-4 h-4 relative z-10" />
+              <CheckIcon className="w-4 h-4 relative z-10" />
             </button>
 
             {/* Cancel button */}
@@ -481,7 +553,7 @@ export default function TaskComponent({
         )}
 
         {/* Enhanced action buttons (only show when not editing) */}
-        {!isEditing && (
+        {!isCurrentlyEditing && (
           <div
             className={`
               flex items-center gap-1 transition-all duration-200 relative z-10
@@ -536,7 +608,7 @@ export default function TaskComponent({
             ${task.completed ? "opacity-30" : "opacity-60 group-hover/task:opacity-80"}
           `}
           style={{ 
-            backgroundColor: task.completed ? completedColor : (isEditing ? editedColor : taskColor)
+            backgroundColor: task.completed ? completedColor : (isCurrentlyEditing ? editedColor : taskColor)
           }}
         />
       </div>

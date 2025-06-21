@@ -9,9 +9,9 @@ import {
 } from "../../Hooks/KeyboardHook";
 import { useToast, ToastContainer } from "../ToastNotification";
 import { useDragAndDrop } from "../../Hooks/DragAndDropHook";
-import FolderList from "./FolderList";
 import { useTaskDataManager } from "../../Hooks/useTaskDataManager";
 import ToDoContextMenu from "./ToDoContextMenu";
+import TaskFolderComponent from "./TaskFolder";
 
 interface ToDoWidgetProps {
   onContextMenu: (
@@ -30,6 +30,23 @@ export default function ToDoWidget({
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+
+  const [showColorMenu, setShowColorMenu] = useState(false);
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
+  const [editingState, setEditingState] = useState<{
+    type: 'task' | 'folder' | null; 
+    id: string | null;            
+    data: {                
+      text?: string;
+      name?: string;
+      colour: string;
+    } | null;
+  }>({
+    type: null,
+    id: null,
+    data: null,
+  });
+
   const widgetRef = useRef<HTMLDivElement>(null);
   const dragGhostRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
@@ -97,9 +114,32 @@ export default function ToDoWidget({
   const handleContextMenuWithHandlers = (e: React.MouseEvent, data: ContextMenuData) => {
     e.stopPropagation();
 
-    // The onClose function that we pass down to the menu content.
-    // It triggers the main App's global click handler to close the menu.
-
+    // --- THIS IS THE NEW PART ---
+    // Create a function that knows how to start editing based on the clicked item's data.
+    const handleStartEdit = () => {
+      if (data.type === 'task' && data.taskId) {
+        const folder = taskData.find(f => f.id === data.folderId);
+        const task = folder?.tasks.find(t => t.id === data.taskId);
+        if (task) {
+          setEditingState({
+            type: 'task',
+            id: task.id,
+            data: { text: task.text, colour: task.colour || '#6366f1' }
+          });
+        }
+      } else if (data.type === 'folder' && data.folderId) {
+        const folder = taskData.find(f => f.id === data.folderId);
+        if (folder) {
+          setEditingState({
+            type: 'folder',
+            id: folder.id,
+            data: { name: folder.name, colour: folder.colour || '#8b5cf6' }
+          });
+        }
+      }
+      // We don't need to call handleCloseContextMenu here, as the menu will do it.
+    };
+    
     // We build the full JSX element here and pass it up to App.
     const menuContent = (
       <ToDoContextMenu
@@ -107,6 +147,8 @@ export default function ToDoWidget({
         folders={taskData}
         handlers={dataHandlers}
         onClose={handleCloseContextMenu}
+        // Pass our newly created handler down to the context menu
+        onStartEdit={handleStartEdit} 
       />
     );
 
@@ -157,7 +199,7 @@ export default function ToDoWidget({
 
       {draggedTask && (
         <div ref={dragGhostRef} style={ghostStyle}>
-          <TaskComponent
+            <TaskComponent
             task={draggedTask.task}
             folderId={draggedTask.currentFolderId}
             dropTarget={null}
@@ -171,13 +213,17 @@ export default function ToDoWidget({
             onClick={() => {}}
             editTask={() => {}}
             isSelected={false}
+            showColorMenu={false}
+            setShowColorMenu={() => {}}
+            showCustomPicker={false}
+            setShowCustomPicker={() => {}}
+            editingState={{ type: null, id: null, data: null }}
+            setEditingState={() => {}}
           />
         </div>
       )}
 
-      {/* OPTION 1: Fixed position at top of widget */}
       <div className="absolute top-16 left-16 w-1/4 flex flex-col" ref={widgetRef}>
-        {/* Action buttons at the top */}
         <div className="sticky top-0 z-50 mb-4">
           <ToDoActionButtons
             setAddFormMode={setAddFormMode}
@@ -197,22 +243,34 @@ export default function ToDoWidget({
           isAddFormOpen={showAddForm}
         />
 
-        {/* Content container with proper spacing */}
-        <div className="flex-1 space-y-4 pb-20"> {/* pb-20 to prevent overlap with floating buttons */}
-          <FolderList
-            folders={taskData}
-            handlers={dataHandlers}
-            draggedTask={draggedTask}
-            dropTarget={dropTarget}
-            selectedTaskId={selectedTaskId}
-            selectedFolderId={selectedFolderId}
-            onContextMenu={handleContextMenuWithHandlers}
-            onTaskDragStart={handleDragStartManual}
-            onTaskClick={handleTaskClick}
-            onFolderContainerClick={handleContainerClick}
-            editTask={dataHandlers.editTask}
-            editFolder={dataHandlers.editFolder}
-          />
+        <div className="flex-1 space-y-4 pb-20">
+      {taskData.map((folder) => (
+        <TaskFolderComponent
+          key={folder.id}
+          folder={folder}
+          toggleFolderVisibility={dataHandlers.toggleFolderVisibility}
+          toggleTaskCompletion={dataHandlers.toggleTaskCompletion}
+          deleteTask={dataHandlers.deleteTask}
+          duplicateTask={dataHandlers.duplicateTask}
+          deleteFolder={dataHandlers.deleteFolder}
+          onContextMenu={handleContextMenuWithHandlers}
+          onTaskDragStart={handleDragStartManual}
+          onTaskClick={handleTaskClick}
+          onContainerClick={handleContainerClick}
+          dropTarget={dropTarget}
+          draggedTask={draggedTask}
+          selectedTaskId={selectedTaskId}
+          selectedFolderId={selectedFolderId}
+          editTask={dataHandlers.editTask}
+          editFolder={dataHandlers.editFolder}
+          showColorMenu={showColorMenu}
+          setShowColorMenu={setShowColorMenu}
+          showCustomPicker={showCustomPicker}
+          setShowCustomPicker={setShowCustomPicker}
+          editingState={editingState}
+          setEditingState={setEditingState}
+        />
+      ))}
         </div>
 
         {/* Keyboard Shortcuts Help Modal */}

@@ -12,9 +12,10 @@ interface ToDoContextMenuProps {
   folders: TaskFolder[];
   handlers: TaskDataHandlers;
   onClose: () => void;
+  onStartEdit: () => void;
 }
 
-export default function ToDoContextMenu({ data, folders, handlers, onClose }: ToDoContextMenuProps) {
+export default function ToDoContextMenu({ data, folders, handlers, onClose, onStartEdit }: ToDoContextMenuProps) {
   const [showFolderSubmenu, setShowFolderSubmenu] = useState(false);
   const [submenuPosition, setSubmenuPosition] = useState({ x: 0, y: 0 });
   
@@ -108,7 +109,7 @@ export default function ToDoContextMenu({ data, folders, handlers, onClose }: To
     if (data.type === "task") {
       return [
         { id: "toggle-complete", text: data.isCompleted ? "Mark as Incomplete" : "Mark as Complete", icon: data.isCompleted ? Circle : CheckCircle, textColor: data.isCompleted ? "text-gray-300" : "text-green-400", onClick: () => handlers.toggleTaskCompletion(data.taskId!, data.folderId!) },
-        { id: "edit", text: "Edit Task", icon: Edit, textColor: "text-blue-400", onClick: () => handlers.editTask(data.taskId!, data.folderId!, "no provided yet", "no provided yet") },
+        { id: "edit", text: "Edit Task", icon: Edit, textColor: "text-blue-400", onClick: () => onStartEdit() },
         { id: "duplicate", text: "Duplicate Task", icon: Copy, textColor: "text-purple-400", onClick: () => handlers.duplicateTask(data.taskId!, data.folderId!) },
         { id: "move", text: "Move to Folder", icon: FolderOpen, textColor: "text-yellow-400", hasSubmenu: true },
         { id: "delete", text: "Delete Task", icon: Trash2, textColor: "text-red-400", onClick: () => handlers.deleteTask(data.taskId!, data.folderId!) },
@@ -116,7 +117,7 @@ export default function ToDoContextMenu({ data, folders, handlers, onClose }: To
     } else if (data.type === "folder") {
       return [
         { id: "toggle-visibility", text: data.folder_visible ? "Hide Folder" : "Show Folder", icon: data.folder_visible ? EyeOff : Eye, textColor: "text-blue-400", onClick: () => handlers.toggleFolderVisibility(data.folderId!) },
-        { id: "edit", text: "Edit Folder", icon: Edit, textColor: "text-blue-400", onClick: () => handlers.editFolder(data.folderId!, "no provided yet", "no provided yet") },
+        { id: "edit", text: "Edit Folder", icon: Edit, textColor: "text-blue-400", onClick: () => onStartEdit() },
         { id: "duplicate", text: "Duplicate Folder", icon: Copy, textColor: "text-purple-400", onClick: () => handlers.duplicateFolder(data.folderId!) },
         { id: "delete", text: "Delete Folder", icon: Trash2, textColor: "text-red-400", onClick: () => handlers.deleteFolder(data.folderId!) },
       ];

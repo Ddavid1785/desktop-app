@@ -1,10 +1,11 @@
-import { ChevronDown, ChevronRight, Folder, Trash2, Edit, Save, X, Palette, Wand2, Check } from "lucide-react";
+import { ChevronDown, ChevronRight, Folder, Trash2, Edit, CheckIcon, X, Palette, Wand2, Check } from "lucide-react";
 import { ContextMenuData, TaskFolder, Task, DragData } from "../../types";
 import TaskComponent from "./Task";
 import { DropTarget } from "../../Hooks/DragAndDropHook";
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import CustomColorPicker from "../ColorPicker";
 import { createPortal } from "react-dom";
+import { useEffect } from "react";
 
 const COLORS = [
   { name: "Default", value: "#8b5cf6" }, // purple-600
@@ -37,6 +38,12 @@ export default function TaskFolderComponent({
   dropTarget,
   editTask,
   editFolder,
+  showColorMenu,
+  setShowColorMenu,
+  showCustomPicker,
+  setShowCustomPicker,
+  editingState,
+  setEditingState,
 }: {
   folder: TaskFolder;
   toggleFolderVisibility: (folderId: string) => void;
@@ -60,17 +67,38 @@ export default function TaskFolderComponent({
   dropTarget: DropTarget | null;
   editTask: (taskId: string, folderId: string, newText: string, newColour: string) => void;
   editFolder: (folderId: string, newName: string, newColour: string) => void;
+  showColorMenu: boolean;
+  setShowColorMenu: (show: boolean) => void;
+  showCustomPicker: boolean;
+  setShowCustomPicker: (show: boolean) => void;
+  editingState: {
+    type: 'task' | 'folder' | null;
+    id: string | null;
+    data: {
+      text?: string;
+      name?: string;
+      colour: string;
+    } | null;
+  };
+  setEditingState: (state: {
+    type: 'task' | 'folder' | null;
+    id: string | null;
+    data: {
+      text?: string;
+      name?: string;
+      colour: string;
+    } | null;
+  }) => void;
 }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedFolder, setEditedFolder] = useState<{name: string, colour: string}>({name: folder.name, colour: folder.colour});
-  const [showColorMenu, setShowColorMenu] = useState(false);
-  const [showCustomPicker, setShowCustomPicker] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const colorButtonRef = useRef<HTMLButtonElement>(null);
 
   const completedTasks = folder.tasks.filter((task) => task.completed).length;
   const totalTasks = folder.tasks.length;
   const remainingTasks = totalTasks - completedTasks;
+
+  // Check if this folder is currently being edited
+  const isFolderBeingEdited = editingState.type === 'folder' && editingState.id === folder.id;
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -87,7 +115,7 @@ export default function TaskFolderComponent({
     const target = e.target as HTMLElement;
     const isClickOnTask = target.closest('[data-task-id]');
     
-    if (!isClickOnTask && !isEditing) {
+    if (!isClickOnTask && !isFolderBeingEdited) {
       onContainerClick(folder.id);
     }
   };
@@ -95,28 +123,37 @@ export default function TaskFolderComponent({
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    setIsEditing(true);
-    setEditedFolder({name: folder.name, colour: folder.colour});
-    // Focus the input after a brief delay to ensure it's rendered
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 10);
+    setEditingState({
+      type: 'folder',
+      id: folder.id,
+      data: {
+        name: folder.name,
+        colour: folder.colour || '#8b5cf6',
+      },
+    });
   };
 
   const handleSaveEdit = () => {
-    if (editedFolder.name.trim()) {
-      editFolder(folder.id, editedFolder.name.trim(), editedFolder.colour);
+    if (editingState.data?.name?.trim()) {
+      editFolder(folder.id, editingState.data.name.trim(), editingState.data.colour);
     }
-    setIsEditing(false);
+    setEditingState({
+      type: null,
+      id: null,
+      data: null,
+    });
     setShowColorMenu(false);
     setShowCustomPicker(false);
   };
 
   const handleCancelEdit = () => {
-    setIsEditing(false);
     setShowColorMenu(false);
     setShowCustomPicker(false);
-    setEditedFolder({name: folder.name, colour: folder.colour});
+    setEditingState({
+      type: null,
+      id: null,
+      data: null,
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -128,12 +165,19 @@ export default function TaskFolderComponent({
   };
 
   const handleColorSelect = (color: string) => {
-    setEditedFolder({...editedFolder, colour: color});
+    setEditingState({
+      type: 'folder',
+      id: folder.id,
+      data: {
+        ...editingState.data,
+        colour: color,
+      },
+    });
     setShowColorMenu(false);
   };
 
-  const handleToggleVisibility = (e: React.MouseEvent) => {
-    if (!isEditing) {
+  const handleToggleVisibility = () => {
+    if (!isFolderBeingEdited) {
       toggleFolderVisibility(folder.id);
     }
   };
@@ -144,7 +188,16 @@ export default function TaskFolderComponent({
   const shouldShowEmptyState = folder.tasks.length === 0;
   const isDragActive = draggedTask !== null;
 
-  const folderColor = isEditing ? editedFolder.colour || '#8b5cf6' : folder.colour || '#8b5cf6';
+  const folderColor = isFolderBeingEdited ? editingState.data?.colour || '#8b5cf6' : folder.colour || '#8b5cf6';
+
+  useEffect(() => {
+    if (isFolderBeingEdited && editingState.id === folder.id) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 10);
+    }
+  }, [isFolderBeingEdited, editingState.id, folder.id]);
 
   return (
     <div
@@ -160,7 +213,7 @@ export default function TaskFolderComponent({
         }
         ${isCurrentlyDragOver ? "ring-2 ring-[var(--folder-color)]/40" : ""}
       `}
-      onContextMenu={isEditing ? undefined : handleContextMenu}
+      onContextMenu={isFolderBeingEdited ? undefined : handleContextMenu}
     >
       {/* Enhanced header with editing capability */}
       <div
@@ -200,12 +253,20 @@ export default function TaskFolderComponent({
         <div className="flex-1 min-w-0">
           {/* Enhanced folder name with editing capability */}
           <div className="flex items-center gap-2">
-            {isEditing ? (
+            {isFolderBeingEdited ? (
               <input
                 ref={inputRef}
                 type="text"
-                value={editedFolder.name}
-                onChange={(e) => setEditedFolder({...editedFolder, name: e.target.value})}
+                value={editingState.data?.name}
+                onChange={(e) => setEditingState({
+                  type: 'folder',
+                  id: folder.id,
+                  data: {
+                    ...editingState.data,
+                    name: e.target.value,
+                    colour: editingState.data?.colour || '#8b5cf6',
+                  },
+                })}
                 onKeyDown={handleKeyDown}
                 onClick={(e) => e.stopPropagation()}
                 className="
@@ -231,7 +292,7 @@ export default function TaskFolderComponent({
         </div>
 
         {/* Edit controls when editing */}
-        {isEditing && (
+        {isFolderBeingEdited && (
           <div className="flex items-center gap-2 relative z-10">
             {/* Color picker button */}
             <div className="relative">
@@ -242,7 +303,7 @@ export default function TaskFolderComponent({
                   setShowColorMenu(!showColorMenu);
                 }}
                 className="w-6 h-6 rounded border-2 border-gray-600 hover:border-gray-500 transition-colors duration-200"
-                style={{ backgroundColor: editedFolder.colour }}
+                style={{ backgroundColor: editingState.data?.colour }}
                 title="Change color"
               />
               
@@ -288,7 +349,7 @@ export default function TaskFolderComponent({
                             className={`
                               group relative w-10 h-10 rounded-xl border-2 transition-all duration-200 
                               hover:scale-110 hover:shadow-lg overflow-hidden
-                              ${editedFolder.colour === color.value
+                              ${editingState.data?.colour === color.value
                                 ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900 border-white/50"
                                 : "border-gray-600/30 hover:border-gray-500/50"
                               }
@@ -296,7 +357,7 @@ export default function TaskFolderComponent({
                             title={color.name}
                           >
                             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                            {editedFolder.colour === color.value && (
+                            {editingState.data?.colour === color.value && (
                               <Check className="absolute inset-0 w-4 h-4 m-auto text-white" />
                             )}
                           </button>
@@ -343,8 +404,15 @@ export default function TaskFolderComponent({
                     onClick={(e) => e.stopPropagation()}
                   >
                     <CustomColorPicker
-                      color={editedFolder.colour}
-                      onChange={(color) => setEditedFolder({...editedFolder, colour: color})}
+                      color={editingState.data?.colour || '#8b5cf6'}
+                      onChange={(color) => setEditingState({
+                        type: 'folder',
+                        id: folder.id,
+                        data: {
+                          ...editingState.data,
+                          colour: color,
+                        },
+                      })}
                       onClose={() => setShowCustomPicker(false)}
                     />
                   </div>
@@ -367,7 +435,7 @@ export default function TaskFolderComponent({
               title="Save changes"
             >
               <div className="absolute inset-0 bg-green-400/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-200 rounded-md" />
-              <Save className="w-4 h-4 relative z-10" />
+              <CheckIcon className="w-4 h-4 relative z-10" />
             </button>
 
             {/* Cancel button */}
@@ -390,7 +458,7 @@ export default function TaskFolderComponent({
         )}
 
         {/* Action buttons when not editing */}
-        {!isEditing && (
+        {!isFolderBeingEdited && (
           <div className="flex items-center gap-1">
             {/* Edit button */}
             <button
@@ -526,6 +594,12 @@ export default function TaskFolderComponent({
                   onClick={() => onTaskClick(task.id, folder.id)}
                   isSelected={selectedTaskId === task.id}
                   editTask={editTask}
+                  showColorMenu={showColorMenu}
+                  setShowColorMenu={setShowColorMenu}
+                  showCustomPicker={showCustomPicker}
+                  setShowCustomPicker={setShowCustomPicker}
+                  editingState={editingState}
+                  setEditingState={setEditingState}
                 />
               ))
             )}
