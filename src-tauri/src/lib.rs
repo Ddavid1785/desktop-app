@@ -1,5 +1,6 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 mod types;
+use std::env;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -7,10 +8,9 @@ use std::path::PathBuf;
 use tauri::command;
 use types::Task;
 use types::TaskFolder;
-use std::env;
 
 fn get_data_dir() -> PathBuf {
-  PathBuf::from(r"D:\ALIP\DesktopApp\SavedData")
+    PathBuf::from(r"D:\ALIP\DesktopApp\SavedData")
 }
 
 // fn get_data_dir() -> PathBuf {
@@ -57,13 +57,13 @@ pub fn setup() -> Result<(), String> {
     Ok(())
 }
 
-fn find_task_array<'a>(folder_data: &'a mut Vec<TaskFolder>, folder_id: String) -> Result<&'a mut Vec<Task>,String> {
-    if let Some(found) = folder_data
-        .iter_mut()
-        .find(|folder| folder.id == folder_id)
-    {
+fn find_task_array<'a>(
+    folder_data: &'a mut Vec<TaskFolder>,
+    folder_id: String,
+) -> Result<&'a mut Vec<Task>, String> {
+    if let Some(found) = folder_data.iter_mut().find(|folder| folder.id == folder_id) {
         Ok(&mut found.tasks)
-    }else {
+    } else {
         return Err("Couldnt find folder with that id".into());
     }
 }
@@ -94,18 +94,27 @@ fn fetch_task_data() -> Result<Vec<TaskFolder>, String> {
         .read(true)
         .open(&file_path)
         .map_err(|e| e.to_string())?;
-    let task_data: Vec<TaskFolder> = serde_json::from_reader(&tasks_file).map_err(|e| e.to_string())?;
+    let task_data: Vec<TaskFolder> =
+        serde_json::from_reader(&tasks_file).map_err(|e| e.to_string())?;
     Ok(task_data)
 }
 
 #[command]
-fn create_folder(folder_name: String, folder_id: String,folder_color:String) -> Result<(), String> {
+fn create_folder(
+    folder_name: String,
+    folder_id: String,
+    folder_color: String,
+    folder_width: i32,
+    folder_max_height: i32,
+) -> Result<(), String> {
     let folder = TaskFolder {
         name: folder_name,
         id: folder_id,
         colour: folder_color,
         visible: true,
         tasks: Vec::new(),
+        width: folder_width,
+        max_height: folder_max_height,
     };
     let mut folder_data = fetch_task_data()?;
     folder_data.push(folder);
@@ -163,10 +172,7 @@ fn duplicate_folder(
     task_clone_ids: Vec<String>,
 ) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
-    if let Some(target_vec) = folder_data
-        .iter_mut()
-        .find(|folder| folder.id == folder_id)
-    {
+    if let Some(target_vec) = folder_data.iter_mut().find(|folder| folder.id == folder_id) {
         let mut clone_folder = target_vec.clone();
         if clone_folder.tasks.len() != task_clone_ids.len() {
             return Err(format!(
@@ -188,7 +194,12 @@ fn duplicate_folder(
 }
 
 #[command]
-fn edit_task(task_id: String, folder_id: String, new_text: String, new_colour: String) -> Result<(), String> {
+fn edit_task(
+    task_id: String,
+    folder_id: String,
+    new_text: String,
+    new_colour: String,
+) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
     let target_vec: &mut Vec<Task> = find_task_array(&mut folder_data, folder_id)?;
     let target_task = find_task(target_vec, task_id)?;
@@ -201,15 +212,12 @@ fn edit_task(task_id: String, folder_id: String, new_text: String, new_colour: S
 #[command]
 fn edit_folder(folder_id: String, new_name: String, new_colour: String) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
-    if let Some(found) = folder_data
-    .iter_mut()
-    .find(|folder| folder.id == folder_id)
-{
-    found.name = new_name;
-    found.colour = new_colour;
-}else {
-    return Err("Couldnt find folder with that id while editing".into());
-}
+    if let Some(found) = folder_data.iter_mut().find(|folder| folder.id == folder_id) {
+        found.name = new_name;
+        found.colour = new_colour;
+    } else {
+        return Err("Couldnt find folder with that id while editing".into());
+    }
 
     write_to_task_json(folder_data)?;
     Ok(())
@@ -233,10 +241,7 @@ fn move_task_order(task_id: String, folder_id: String, new_index: usize) -> Resu
 #[command]
 fn toggle_visability_folder(folder_id: String) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
-    if let Some(target_folder) = folder_data
-        .iter_mut()
-        .find(|folder| folder.id == folder_id)
-    {
+    if let Some(target_folder) = folder_data.iter_mut().find(|folder| folder.id == folder_id) {
         target_folder.visible = !target_folder.visible;
         write_to_task_json(folder_data)?;
     } else {

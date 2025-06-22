@@ -11,6 +11,10 @@ export interface TaskFolder{
      colour: string;
      visible: boolean,
      tasks: Task[],
+     width: number,
+     maxHeight: number,
+     //x: number,
+     //y: number,
 }
 
 export interface DragData {

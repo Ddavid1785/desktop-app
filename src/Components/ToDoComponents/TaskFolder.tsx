@@ -1,4 +1,15 @@
-import { ChevronDown, ChevronRight, Folder, Trash2, Edit, CheckIcon, X, Palette, Wand2, Check } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Folder,
+  Trash2,
+  Edit,
+  CheckIcon,
+  X,
+  Palette,
+  Wand2,
+  Check,
+} from "lucide-react";
 import { ContextMenuData, TaskFolder, Task, DragData } from "../../types";
 import TaskComponent from "./Task";
 import { DropTarget } from "../../Hooks/DragAndDropHook";
@@ -9,16 +20,16 @@ import { useEffect } from "react";
 
 const COLORS = [
   { name: "Default", value: "#8b5cf6" }, // purple-600
-  { name: "Blue", value: "#2563eb" },    // blue-600
-  { name: "Green", value: "#16a34a" },   // green-600
-  { name: "Purple", value: "#9333ea" },  // purple-600
-  { name: "Pink", value: "#db2777" },    // pink-600
-  { name: "Orange", value: "#ea580c" },  // orange-600
-  { name: "Teal", value: "#0d9488" },    // teal-600
-  { name: "Indigo", value: "#4f46e5" },  // indigo-600
-  { name: "Cyan", value: "#0891b2" },    // cyan-600
-  { name: "Rose", value: "#e11d48" },    // rose-600
-  { name: "Amber", value: "#d97706" },   // amber-600
+  { name: "Blue", value: "#2563eb" }, // blue-600
+  { name: "Green", value: "#16a34a" }, // green-600
+  { name: "Purple", value: "#9333ea" }, // purple-600
+  { name: "Pink", value: "#db2777" }, // pink-600
+  { name: "Orange", value: "#ea580c" }, // orange-600
+  { name: "Teal", value: "#0d9488" }, // teal-600
+  { name: "Indigo", value: "#4f46e5" }, // indigo-600
+  { name: "Cyan", value: "#0891b2" }, // cyan-600
+  { name: "Rose", value: "#e11d48" }, // rose-600
+  { name: "Amber", value: "#d97706" }, // amber-600
 ];
 
 export default function TaskFolderComponent({
@@ -65,14 +76,19 @@ export default function TaskFolderComponent({
   selectedTaskId: string | null;
   selectedFolderId: string | null;
   dropTarget: DropTarget | null;
-  editTask: (taskId: string, folderId: string, newText: string, newColour: string) => void;
+  editTask: (
+    taskId: string,
+    folderId: string,
+    newText: string,
+    newColour: string
+  ) => void;
   editFolder: (folderId: string, newName: string, newColour: string) => void;
   showColorMenu: boolean;
   setShowColorMenu: (show: boolean) => void;
   showCustomPicker: boolean;
   setShowCustomPicker: (show: boolean) => void;
   editingState: {
-    type: 'task' | 'folder' | null;
+    type: "task" | "folder" | null;
     id: string | null;
     data: {
       text?: string;
@@ -81,7 +97,7 @@ export default function TaskFolderComponent({
     } | null;
   };
   setEditingState: (state: {
-    type: 'task' | 'folder' | null;
+    type: "task" | "folder" | null;
     id: string | null;
     data: {
       text?: string;
@@ -98,7 +114,8 @@ export default function TaskFolderComponent({
   const remainingTasks = totalTasks - completedTasks;
 
   // Check if this folder is currently being edited
-  const isFolderBeingEdited = editingState.type === 'folder' && editingState.id === folder.id;
+  const isFolderBeingEdited =
+    editingState.type === "folder" && editingState.id === folder.id;
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -113,8 +130,8 @@ export default function TaskFolderComponent({
   const handleContainerClick = (e: React.MouseEvent) => {
     // Allow selection when clicking anywhere in the content area that's not a task
     const target = e.target as HTMLElement;
-    const isClickOnTask = target.closest('[data-task-id]');
-    
+    const isClickOnTask = target.closest("[data-task-id]");
+
     if (!isClickOnTask && !isFolderBeingEdited) {
       onContainerClick(folder.id);
     }
@@ -124,18 +141,22 @@ export default function TaskFolderComponent({
     e.stopPropagation();
     e.preventDefault();
     setEditingState({
-      type: 'folder',
+      type: "folder",
       id: folder.id,
       data: {
         name: folder.name,
-        colour: folder.colour || '#8b5cf6',
+        colour: folder.colour || "#8b5cf6",
       },
     });
   };
 
   const handleSaveEdit = () => {
     if (editingState.data?.name?.trim()) {
-      editFolder(folder.id, editingState.data.name.trim(), editingState.data.colour);
+      editFolder(
+        folder.id,
+        editingState.data.name.trim(),
+        editingState.data.colour
+      );
     }
     setEditingState({
       type: null,
@@ -157,16 +178,16 @@ export default function TaskFolderComponent({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSaveEdit();
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       handleCancelEdit();
     }
   };
 
   const handleColorSelect = (color: string) => {
     setEditingState({
-      type: 'folder',
+      type: "folder",
       id: folder.id,
       data: {
         ...editingState.data,
@@ -188,7 +209,9 @@ export default function TaskFolderComponent({
   const shouldShowEmptyState = folder.tasks.length === 0;
   const isDragActive = draggedTask !== null;
 
-  const folderColor = isFolderBeingEdited ? editingState.data?.colour || '#8b5cf6' : folder.colour || '#8b5cf6';
+  const folderColor = isFolderBeingEdited
+    ? editingState.data?.colour || "#8b5cf6"
+    : folder.colour || "#8b5cf6";
 
   useEffect(() => {
     if (isFolderBeingEdited && editingState.id === folder.id) {
@@ -201,7 +224,12 @@ export default function TaskFolderComponent({
 
   return (
     <div
-      style={{ '--folder-color': folderColor } as React.CSSProperties}
+      style={
+        {
+          "--folder-color": folderColor,
+          width: `${folder.width}px`,
+        } as React.CSSProperties
+      }
       className={`
         bg-gray-950 rounded-lg mb-3 overflow-hidden 
         transition-all duration-200 border
@@ -221,15 +249,15 @@ export default function TaskFolderComponent({
         onClick={handleToggleVisibility}
         data-folder-drop-id={folder.id}
         style={{
-          background: `linear-gradient(135deg, ${folderColor}08 0%, ${folderColor}04 50%, transparent 100%)`
+          background: `linear-gradient(135deg, ${folderColor}08 0%, ${folderColor}04 50%, transparent 100%)`,
         }}
       >
         {/* Subtle animated accent bar */}
-        <div 
+        <div
           className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-2"
           style={{ backgroundColor: folderColor }}
         />
-        
+
         <button className="text-gray-400 hover:text-gray-200 transition-colors hover:cursor-pointer ml-2">
           {folder.visible ? (
             <ChevronDown className="w-4 h-4" />
@@ -237,19 +265,19 @@ export default function TaskFolderComponent({
             <ChevronRight className="w-4 h-4" />
           )}
         </button>
-        
+
         {/* Enhanced folder icon with subtle glow effect */}
         <div className="relative">
-          <Folder 
-            className="w-4 h-4 transition-all duration-200 group-hover:scale-110" 
+          <Folder
+            className="w-4 h-4 transition-all duration-200 group-hover:scale-110"
             style={{ color: folderColor }}
           />
-          <div 
+          <div
             className="absolute inset-0 w-4 h-4 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-200 blur-sm"
             style={{ backgroundColor: folderColor }}
           />
         </div>
-        
+
         <div className="flex-1 min-w-0">
           {/* Enhanced folder name with editing capability */}
           <div className="flex items-center gap-2">
@@ -258,15 +286,17 @@ export default function TaskFolderComponent({
                 ref={inputRef}
                 type="text"
                 value={editingState.data?.name}
-                onChange={(e) => setEditingState({
-                  type: 'folder',
-                  id: folder.id,
-                  data: {
-                    ...editingState.data,
-                    name: e.target.value,
-                    colour: editingState.data?.colour || '#8b5cf6',
-                  },
-                })}
+                onChange={(e) =>
+                  setEditingState({
+                    type: "folder",
+                    id: folder.id,
+                    data: {
+                      ...editingState.data,
+                      name: e.target.value,
+                      colour: editingState.data?.colour || "#8b5cf6",
+                    },
+                  })
+                }
                 onKeyDown={handleKeyDown}
                 onClick={(e) => e.stopPropagation()}
                 className="
@@ -282,7 +312,7 @@ export default function TaskFolderComponent({
                   {folder.name}
                 </h3>
                 {/* Small colored dot as accent */}
-                <div 
+                <div
                   className="w-1.5 h-1.5 rounded-full opacity-60 group-hover:opacity-80 transition-opacity"
                   style={{ backgroundColor: folderColor }}
                 />
@@ -306,120 +336,142 @@ export default function TaskFolderComponent({
                 style={{ backgroundColor: editingState.data?.colour }}
                 title="Change color"
               />
-              
+
               {/* Color menu dropdown */}
-              {showColorMenu && !showCustomPicker && createPortal(
-                  <div 
-                  className="fixed inset-0 z-50"
-                  onClick={() => setShowColorMenu(false)}
-                >
-                  <div 
-                    className="
+              {showColorMenu &&
+                !showCustomPicker &&
+                createPortal(
+                  <div
+                    className="fixed inset-0 z-50"
+                    onClick={() => setShowColorMenu(false)}
+                  >
+                    <div
+                      className="
                       absolute p-4 bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 
                       rounded-2xl shadow-2xl z-10 w-60 overflow-hidden
                     "
-                    style={{
-                      left: colorButtonRef.current?.getBoundingClientRect().left ? 
-                        colorButtonRef.current.getBoundingClientRect().left - 220 : 0,
-                      top: colorButtonRef.current?.getBoundingClientRect().bottom ? 
-                        colorButtonRef.current.getBoundingClientRect().bottom + 8 : 0,
-                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {/* Menu gradient background */}
-                    <div 
-                      className="absolute inset-0 opacity-5"
                       style={{
-                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%)'
+                        left: colorButtonRef.current?.getBoundingClientRect()
+                          .left
+                          ? colorButtonRef.current.getBoundingClientRect()
+                              .left - 220
+                          : 0,
+                        top: colorButtonRef.current?.getBoundingClientRect()
+                          .bottom
+                          ? colorButtonRef.current.getBoundingClientRect()
+                              .bottom + 8
+                          : 0,
+                        boxShadow:
+                          "0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)",
                       }}
-                    />
-                    
-                    <div className="relative z-10">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Palette className="w-4 h-4 text-purple-400" />
-                        <span className="text-sm font-medium text-white">Choose Color</span>
-                      </div>
-                      <div className="grid grid-cols-4 gap-3">
-                        {COLORS.map((color) => (
-                          <button
-                            key={color.value}
-                            onClick={() => handleColorSelect(color.value)}
-                            style={{ backgroundColor: color.value }}
-                            className={`
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Menu gradient background */}
+                      <div
+                        className="absolute inset-0 opacity-5"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%)",
+                        }}
+                      />
+
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Palette className="w-4 h-4 text-purple-400" />
+                          <span className="text-sm font-medium text-white">
+                            Choose Color
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-3">
+                          {COLORS.map((color) => (
+                            <button
+                              key={color.value}
+                              onClick={() => handleColorSelect(color.value)}
+                              style={{ backgroundColor: color.value }}
+                              className={`
                               group relative w-10 h-10 rounded-xl border-2 transition-all duration-200 
                               hover:scale-110 hover:shadow-lg overflow-hidden
-                              ${editingState.data?.colour === color.value
-                                ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900 border-white/50"
-                                : "border-gray-600/30 hover:border-gray-500/50"
+                              ${
+                                editingState.data?.colour === color.value
+                                  ? "ring-2 ring-white ring-offset-2 ring-offset-gray-900 border-white/50"
+                                  : "border-gray-600/30 hover:border-gray-500/50"
                               }
                             `}
-                            title={color.name}
-                          >
-                            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                            {editingState.data?.colour === color.value && (
-                              <Check className="absolute inset-0 w-4 h-4 m-auto text-white" />
-                            )}
-                          </button>
-                        ))}
-                        
-                        {/* Custom Color Picker Button */}
-                        <button
-                          onClick={() => {
-                            setShowCustomPicker(true);
-                            setShowColorMenu(false);
-                          }}
-                          className="
+                              title={color.name}
+                            >
+                              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                              {editingState.data?.colour === color.value && (
+                                <Check className="absolute inset-0 w-4 h-4 m-auto text-white" />
+                              )}
+                            </button>
+                          ))}
+
+                          {/* Custom Color Picker Button */}
+                          <button
+                            onClick={() => {
+                              setShowCustomPicker(true);
+                              setShowColorMenu(false);
+                            }}
+                            className="
                             group relative w-10 h-10 rounded-xl border-2 border-gray-600/50 
                             flex items-center justify-center transition-all duration-200 
                             hover:border-purple-500/50 hover:scale-110 hover:shadow-lg
                             bg-gradient-to-br from-purple-500/20 to-pink-500/20
                           "
-                          title="Custom color"
-                        >
-                          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl" />
-                          <Wand2 className="w-4 h-4 text-purple-400 relative z-10" />
-                        </button>
+                            title="Custom color"
+                          >
+                            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl" />
+                            <Wand2 className="w-4 h-4 text-purple-400 relative z-10" />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>,
-                document.body
-              )}
+                  </div>,
+                  document.body
+                )}
 
               {/* Custom color picker */}
-              {showCustomPicker && createPortal(
-                <div 
-                  className="fixed inset-0 z-50" 
-                  onClick={() => setShowCustomPicker(false)}
-                >
-                  <div 
-                    className="absolute z-50" 
-                    style={{ 
-                      left: colorButtonRef.current?.getBoundingClientRect().left ? 
-                        colorButtonRef.current.getBoundingClientRect().left - 250 : 0, 
-                      top: colorButtonRef.current?.getBoundingClientRect().bottom ? 
-                        colorButtonRef.current.getBoundingClientRect().bottom + 8 : 0
-                    }}
-                    onClick={(e) => e.stopPropagation()}
+              {showCustomPicker &&
+                createPortal(
+                  <div
+                    className="fixed inset-0 z-50"
+                    onClick={() => setShowCustomPicker(false)}
                   >
-                    <CustomColorPicker
-                      color={editingState.data?.colour || '#8b5cf6'}
-                      onChange={(color) => setEditingState({
-                        type: 'folder',
-                        id: folder.id,
-                        data: {
-                          ...editingState.data,
-                          colour: color,
-                        },
-                      })}
-                      onClose={() => setShowCustomPicker(false)}
-                    />
-                  </div>
-                </div>,
-                document.body
-              )}
-            </div>  
+                    <div
+                      className="absolute z-50"
+                      style={{
+                        left: colorButtonRef.current?.getBoundingClientRect()
+                          .left
+                          ? colorButtonRef.current.getBoundingClientRect()
+                              .left - 250
+                          : 0,
+                        top: colorButtonRef.current?.getBoundingClientRect()
+                          .bottom
+                          ? colorButtonRef.current.getBoundingClientRect()
+                              .bottom + 8
+                          : 0,
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <CustomColorPicker
+                        color={editingState.data?.colour || "#8b5cf6"}
+                        onChange={(color) =>
+                          setEditingState({
+                            type: "folder",
+                            id: folder.id,
+                            data: {
+                              ...editingState.data,
+                              colour: color,
+                            },
+                          })
+                        }
+                        onClose={() => setShowCustomPicker(false)}
+                      />
+                    </div>
+                  </div>,
+                  document.body
+                )}
+            </div>
 
             {/* Save button */}
             <button
@@ -492,23 +544,25 @@ export default function TaskFolderComponent({
             </button>
           </div>
         )}
-        
+
         {/* Enhanced status indicator */}
         {!isFolderBeingEdited && (
           <div className="flex items-center gap-2">
-            <div 
+            <div
               className={`w-2 h-2 rounded-full transition-all duration-200 ${
                 remainingTasks > 0 ? "opacity-40" : "opacity-80 animate-pulse"
               }`}
-              style={{ 
-                backgroundColor: remainingTasks > 0 ? folderColor : '#10b981'
+              style={{
+                backgroundColor: remainingTasks > 0 ? folderColor : "#10b981",
               }}
             />
-            <div className={`text-xs font-medium ${
-              remainingTasks > 0 
-                ? "text-gray-400 group-hover:text-gray-300"
-                : "text-green-400"
-            } transition-colors`}>
+            <div
+              className={`text-xs font-medium ${
+                remainingTasks > 0
+                  ? "text-gray-400 group-hover:text-gray-300"
+                  : "text-green-400"
+              } transition-colors`}
+            >
               {remainingTasks > 0 ? `${remainingTasks} remaining` : "All done"}
             </div>
           </div>
@@ -521,7 +575,7 @@ export default function TaskFolderComponent({
           onClick={handleContainerClick}
           className={`
             border-t transition-all duration-200 cursor-pointer
-            max-h-48 overflow-y-auto no-scrollbar
+            overflow-y-auto no-scrollbar
             ${
               isCurrentlyDragOver
                 ? `bg-[var(--folder-color)]/15 border-[var(--folder-color)]/30`
@@ -533,33 +587,34 @@ export default function TaskFolderComponent({
                 : ""
             }
           `}
-          data-folder-drop-id={folder.id}
           style={{
-            minHeight: shouldShowEmptyState ? "4rem" : "auto",
-            background: isCurrentlyDragOver 
+            height: shouldShowEmptyState ? "4rem" : `${folder.maxHeight}px`,
+            background: isCurrentlyDragOver
               ? `linear-gradient(135deg, ${folderColor}15 0%, ${folderColor}08 100%)`
               : isFolderSelected && !selectedTaskId
               ? `linear-gradient(135deg, #3b82f610 0%, ${folderColor}03 100%)`
-              : `linear-gradient(135deg, ${folderColor}03 0%, transparent 100%)`
+              : `linear-gradient(135deg, ${folderColor}03 0%, transparent 100%)`,
           }}
+          data-folder-drop-id={folder.id}
         >
           <div className="p-3 pt-2 space-y-2">
             {shouldShowEmptyState ? (
-              <div 
+              <div
                 className={`
                   text-center py-4 text-sm h-16 flex items-center justify-center transition-colors cursor-pointer
-                  ${isDragActive && isCurrentlyDragOver 
-                    ? "text-gray-300 font-medium" 
-                    : isFolderSelected && !selectedTaskId
-                    ? "text-gray-400"
-                    : "text-gray-600"
+                  ${
+                    isDragActive && isCurrentlyDragOver
+                      ? "text-gray-300 font-medium"
+                      : isFolderSelected && !selectedTaskId
+                      ? "text-gray-400"
+                      : "text-gray-600"
                   }
                 `}
                 onClick={handleContainerClick}
               >
                 {isDragActive && isCurrentlyDragOver ? (
                   <div className="flex items-center gap-2">
-                    <div 
+                    <div
                       className="w-2 h-2 rounded-full animate-pulse"
                       style={{ backgroundColor: folderColor }}
                     />
@@ -567,7 +622,7 @@ export default function TaskFolderComponent({
                   </div>
                 ) : isFolderSelected && !selectedTaskId ? (
                   <div className="flex items-center gap-2">
-                    <div 
+                    <div
                       className="w-2 h-2 rounded-full"
                       style={{ backgroundColor: folderColor }}
                     />
@@ -580,7 +635,9 @@ export default function TaskFolderComponent({
             ) : (
               folder.tasks.map((task, index) => (
                 <TaskComponent
-                  key={task.id || `folder-${folder.id}-task-${task.id}-${index}`}
+                  key={
+                    task.id || `folder-${folder.id}-task-${task.id}-${index}`
+                  }
                   task={task}
                   folderId={folder.id}
                   duplicateTask={duplicateTask}

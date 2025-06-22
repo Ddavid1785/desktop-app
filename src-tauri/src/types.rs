@@ -16,5 +16,7 @@ pub struct TaskFolder {
     pub colour: String,
     pub visible: bool,
     pub tasks: Vec<Task>,
+    pub width: i32,
+    pub max_height: i32,
 }
 

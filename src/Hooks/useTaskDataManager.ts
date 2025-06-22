@@ -75,8 +75,22 @@ export function useTaskDataManager() {
   const addFolder = async (folderName: string, folderColor: string) => {
     const folderId = crypto.randomUUID();
     try {
-        await invoke("create_folder", { folderName, folderId, folderColor });
-        setTaskData(prev => [...prev, { name: folderName, id: folderId, visible: true, tasks: [], colour: folderColor }]);
+        await invoke("create_folder", { 
+          folderName, 
+          folderId, 
+          folderColor,
+          folderWidth: 400,
+          folderMaxHeight: 200
+        });
+        setTaskData(prev => [...prev, { 
+          name: folderName, 
+          id: folderId, 
+          visible: true, 
+          tasks: [], 
+          colour: folderColor, 
+          width: 400, 
+          maxHeight: 200
+        }]);
         return folderId;
     } catch (e) {
         showToast("Failed to create folder", "error");
