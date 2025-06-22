@@ -9,6 +9,26 @@ interface KeyboardShortcutsProps {
   setShowAddForm: (show: boolean) => void;
   setAddFormMode: (mode: "task" | "folder") => void;
   onShowToast?: (message: string, type?: "success" | "error" | "info") => void;
+  editingState: {
+    type: 'task' | 'folder' | null;
+    id: string | null;
+    data: {
+      text?: string;
+      name?: string;
+      colour: string;
+    } | null;
+  };
+  setEditingState: (state: {
+    type: 'task' | 'folder' | null;
+    id: string | null;
+    data: {
+      text?: string;
+      name?: string;
+      colour: string;
+    } | null;
+  }) => void;
+  setSelectedTaskId: (id: string | null) => void;
+  setSelectedFolderId: (id: string | null) => void;
 }
 
 let clipboardTask: { task: Task; folderId: string } | null = null;
@@ -21,6 +41,10 @@ export function useKeyboardShortcuts({
   setShowAddForm,
   setAddFormMode,
   onShowToast,
+  editingState,
+  setEditingState,
+  setSelectedTaskId,
+  setSelectedFolderId,
 }: KeyboardShortcutsProps) {
   const lastActionRef = useRef<string>("");
 
@@ -177,6 +201,148 @@ export function useKeyboardShortcuts({
         setShowAddForm(false);
         return;
       }
+
+      // F2 - Start editing selected task or folder
+      if (e.key === "F2") {
+        e.preventDefault();
+        const selectedTask = findSelectedTask();
+        if (selectedTask) {
+          // Start editing the selected task
+          setEditingState({
+            type: 'task',
+            id: selectedTask.task.id,
+            data: {
+              text: selectedTask.task.text,
+              colour: selectedTask.task.colour || '#6366f1',
+            },
+          });
+          lastActionRef.current = "edit-task";
+        } else if (selectedFolderId) {
+          // Start editing the selected folder
+          const folder = taskData.find((f) => f.id === selectedFolderId);
+          if (folder) {
+            setEditingState({
+              type: 'folder',
+              id: folder.id,
+              data: {
+                name: folder.name,
+                colour: folder.colour || '#8b5cf6',
+              },
+            });
+            lastActionRef.current = "edit-folder";
+          }
+        } else {
+          onShowToast?.("No item selected to edit", "info");
+        }
+        return;
+      }
+
+      // Arrow keys for navigation
+      if (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        e.preventDefault();
+        
+        // Left/Right arrows - navigate between folders only
+        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+          const currentFolderIndex = taskData.findIndex(folder => folder.id === selectedFolderId);
+          if (currentFolderIndex !== -1) {
+            let newFolderIndex = currentFolderIndex;
+            if (e.key === "ArrowLeft") {
+              newFolderIndex = Math.max(0, currentFolderIndex - 1);
+            } else {
+              newFolderIndex = Math.min(taskData.length - 1, currentFolderIndex + 1);
+            }
+            
+            if (newFolderIndex !== currentFolderIndex) {
+              const newFolder = taskData[newFolderIndex];
+              setSelectedFolderId(newFolder.id);
+              setSelectedTaskId(null);
+            }
+          } else if (taskData.length > 0) {
+            // No folder selected, select first or last
+            const targetIndex = e.key === "ArrowLeft" ? taskData.length - 1 : 0;
+            setSelectedFolderId(taskData[targetIndex].id);
+            setSelectedTaskId(null);
+          }
+          return;
+        }
+
+        // Up/Down arrows - navigate through all items (folders and tasks) in order
+        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+          // Create a flat list of all items in order
+          const allItems: Array<{ type: 'folder' | 'task', id: string, folderId?: string }> = [];
+          taskData.forEach(folder => {
+            // Add folder
+            allItems.push({ type: 'folder', id: folder.id });
+            // Add tasks in this folder
+            folder.tasks.forEach(task => {
+              allItems.push({ type: 'task', id: task.id, folderId: folder.id });
+            });
+          });
+
+          // Find current item index - check both selectedTaskId and selectedFolderId
+          let currentItemIndex = -1;
+          if (selectedTaskId) {
+            currentItemIndex = allItems.findIndex(item => 
+              item.type === 'task' && item.id === selectedTaskId
+            );
+          } else if (selectedFolderId) {
+            currentItemIndex = allItems.findIndex(item => 
+              item.type === 'folder' && item.id === selectedFolderId
+            );
+          }
+
+          console.log('Navigation debug:', {
+            selectedTaskId,
+            selectedFolderId,
+            currentItemIndex,
+            allItems: allItems.map(item => `${item.type}:${item.id}`),
+            key: e.key
+          });
+
+          if (currentItemIndex === -1) {
+            // No selection, select first item
+            if (allItems.length > 0) {
+              const firstItem = allItems[0];
+              if (firstItem.type === 'folder') {
+                setSelectedFolderId(firstItem.id);
+                setSelectedTaskId(null);
+              } else {
+                setSelectedTaskId(firstItem.id);
+                setSelectedFolderId(firstItem.folderId || null);
+              }
+            }
+            return;
+          }
+
+          // Calculate new index
+          let newIndex = currentItemIndex;
+          if (e.key === "ArrowUp") {
+            newIndex = Math.max(0, currentItemIndex - 1);
+          } else {
+            newIndex = Math.min(allItems.length - 1, currentItemIndex + 1);
+          }
+
+          console.log('Navigation update:', {
+            currentItemIndex,
+            newIndex,
+            currentItem: allItems[currentItemIndex],
+            newItem: allItems[newIndex]
+          });
+
+          // Update selection
+          if (newIndex !== currentItemIndex) {
+            const newItem = allItems[newIndex];
+            if (newItem.type === 'folder') {
+              setSelectedFolderId(newItem.id);
+              setSelectedTaskId(null);
+            } else {
+              setSelectedTaskId(newItem.id);
+              setSelectedFolderId(newItem.folderId || null);
+            }
+          }
+          return;
+        }
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -189,6 +355,10 @@ export function useKeyboardShortcuts({
     setShowAddForm,
     setAddFormMode,
     onShowToast,
+    editingState,
+    setEditingState,
+    setSelectedTaskId,
+    setSelectedFolderId,
   ]);
 
   return {

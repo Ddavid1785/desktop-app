@@ -276,7 +276,7 @@ export default function TaskComponent({
           ${!isDragging && !isCurrentlyEditing ? "cursor-grab active:cursor-grabbing" : ""}
           ${
             isSelected && !isCurrentlyEditing
-              ? "!border-blue-500 !outline-2 !outline-blue-500/50 !outline-offset-1 !outline"
+              ? "!border-blue-500 !ring-2 !ring-blue-500/30"
               : ""
           }
         `}

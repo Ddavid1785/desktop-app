@@ -73,6 +73,10 @@ export default function ToDoWidget({
     setShowAddForm,
     setAddFormMode,
     onShowToast: showToast,
+    editingState,
+    setEditingState,
+    setSelectedTaskId,
+    setSelectedFolderId,
   });
 
   useEffect(() => {

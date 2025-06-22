@@ -494,23 +494,25 @@ export default function TaskFolderComponent({
         )}
         
         {/* Enhanced status indicator */}
-        <div className="flex items-center gap-2">
-          <div 
-            className={`w-2 h-2 rounded-full transition-all duration-200 ${
-              remainingTasks > 0 ? "opacity-40" : "opacity-80 animate-pulse"
-            }`}
-            style={{ 
-              backgroundColor: remainingTasks > 0 ? folderColor : '#10b981'
-            }}
-          />
-          <div className={`text-xs font-medium ${
-            remainingTasks > 0 
-              ? "text-gray-400 group-hover:text-gray-300"
-              : "text-green-400"
-          } transition-colors`}>
-            {remainingTasks > 0 ? `${remainingTasks} remaining` : "All done"}
+        {!isFolderBeingEdited && (
+          <div className="flex items-center gap-2">
+            <div 
+              className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                remainingTasks > 0 ? "opacity-40" : "opacity-80 animate-pulse"
+              }`}
+              style={{ 
+                backgroundColor: remainingTasks > 0 ? folderColor : '#10b981'
+              }}
+            />
+            <div className={`text-xs font-medium ${
+              remainingTasks > 0 
+                ? "text-gray-400 group-hover:text-gray-300"
+                : "text-green-400"
+            } transition-colors`}>
+              {remainingTasks > 0 ? `${remainingTasks} remaining` : "All done"}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Enhanced content area with improved click handling */}
