@@ -272,6 +272,7 @@ export default function ToDoWidget({
               selectedFolderId={selectedFolderId}
               editTask={dataHandlers.editTask}
               editFolder={dataHandlers.editFolder}
+              resizeFolder={dataHandlers.resizeFolder}
               showColorMenu={showColorMenu}
               setShowColorMenu={setShowColorMenu}
               showCustomPicker={showCustomPicker}

@@ -224,6 +224,20 @@ fn edit_folder(folder_id: String, new_name: String, new_colour: String) -> Resul
 }
 
 #[command]
+fn resize_folder(folder_id: String, new_width: i32, new_height: i32) -> Result<(), String> {
+    let mut folder_data = fetch_task_data()?;
+    if let Some(found) = folder_data.iter_mut().find(|folder| folder.id == folder_id) {
+        found.width = new_width;
+        found.max_height = new_height;
+    } else {
+        return Err("Couldnt find folder with that id while editing".into());
+    }
+
+    write_to_task_json(folder_data)?;
+    Ok(())
+}
+
+#[command]
 fn move_task_order(task_id: String, folder_id: String, new_index: usize) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
     let target_vec: &mut Vec<Task> = find_task_array(&mut folder_data, folder_id)?;
@@ -297,7 +311,8 @@ pub fn run() {
             duplicate_task,
             duplicate_folder,
             move_task_order,
-            edit_folder
+            edit_folder,
+            resize_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

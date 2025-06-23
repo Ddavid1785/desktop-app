@@ -9,11 +9,13 @@ import {
   Palette,
   Wand2,
   Check,
+  GripVertical,
+  GripHorizontal,
 } from "lucide-react";
 import { ContextMenuData, TaskFolder, Task, DragData } from "../../types";
 import TaskComponent from "./Task";
 import { DropTarget } from "../../Hooks/DragAndDropHook";
-import { useRef } from "react";
+import { useRef, useState, useCallback } from "react";
 import CustomColorPicker from "../ColorPicker";
 import { createPortal } from "react-dom";
 import { useEffect } from "react";
@@ -32,10 +34,17 @@ const COLORS = [
   { name: "Amber", value: "#d97706" }, // amber-600
 ];
 
+// Minimum and maximum constraints for resizing
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 800;
+const MIN_HEIGHT = 100;
+const MAX_HEIGHT = 600;
+
 export default function TaskFolderComponent({
   folder,
   toggleFolderVisibility,
   toggleTaskCompletion,
+  resizeFolder,
   deleteTask,
   deleteFolder,
   onContextMenu,
@@ -59,6 +68,11 @@ export default function TaskFolderComponent({
   folder: TaskFolder;
   toggleFolderVisibility: (folderId: string) => void;
   toggleTaskCompletion: (taskId: string, folderId: string) => void;
+  resizeFolder: (
+    folderId: string,
+    newWidth: number,
+    newMaxHeight: number
+  ) => void;
   deleteTask: (taskId: string, folderId: string) => void;
   deleteFolder: (folderId: string) => void;
   onContextMenu: (e: React.MouseEvent, data: ContextMenuData) => void;
@@ -108,6 +122,16 @@ export default function TaskFolderComponent({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const colorButtonRef = useRef<HTMLButtonElement>(null);
+  const folderRef = useRef<HTMLDivElement>(null);
+
+  // Resize state
+  const [isResizing, setIsResizing] = useState<{
+    type: "width" | "height" | "corner" | null;
+    startX: number;
+    startY: number;
+    startWidth: number;
+    startHeight: number;
+  }>({ type: null, startX: 0, startY: 0, startWidth: 0, startHeight: 0 });
 
   const completedTasks = folder.tasks.filter((task) => task.completed).length;
   const totalTasks = folder.tasks.length;
@@ -116,6 +140,157 @@ export default function TaskFolderComponent({
   // Check if this folder is currently being edited
   const isFolderBeingEdited =
     editingState.type === "folder" && editingState.id === folder.id;
+
+  // Resize handlers
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent, type: "width" | "height" | "corner") => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Get current dimensions from the DOM element
+      const currentRect = folderRef.current?.getBoundingClientRect();
+      const contentArea = folderRef.current?.querySelector(
+        "[data-content-area]"
+      ) as HTMLElement;
+
+      let currentWidth = folder.width;
+      let currentHeight = folder.maxHeight;
+
+      // Get actual current dimensions if available
+      if (currentRect) {
+        currentWidth = currentRect.width;
+      }
+
+      if (contentArea && folder.visible) {
+        const contentRect = contentArea.getBoundingClientRect();
+        currentHeight = contentRect.height;
+      }
+
+      setIsResizing({
+        type,
+        startX: e.clientX,
+        startY: e.clientY,
+        startWidth: currentWidth,
+        startHeight: currentHeight,
+      });
+    },
+    [folder.width, folder.maxHeight, folder.visible]
+  );
+
+  const handleResizeMove = useCallback(
+    (e: MouseEvent) => {
+      if (isResizing.type === null) return;
+
+      const deltaX = e.clientX - isResizing.startX;
+      const deltaY = e.clientY - isResizing.startY;
+
+      let newWidth = isResizing.startWidth;
+      let newHeight = isResizing.startHeight;
+
+      // Only update the dimension being resized
+      if (isResizing.type === "width" || isResizing.type === "corner") {
+        newWidth = Math.max(
+          MIN_WIDTH,
+          Math.min(MAX_WIDTH, isResizing.startWidth + deltaX)
+        );
+      }
+
+      if (isResizing.type === "height" || isResizing.type === "corner") {
+        newHeight = Math.max(
+          MIN_HEIGHT,
+          Math.min(MAX_HEIGHT, isResizing.startHeight + deltaY)
+        );
+      }
+
+      // Update immediately for smooth resizing
+      if (folderRef.current) {
+        // Update width - but preserve current width if we're only resizing height
+        if (isResizing.type === "width" || isResizing.type === "corner") {
+          folderRef.current.style.width = `${newWidth}px`;
+        }
+
+        // For height, update the content area directly
+        const contentArea = folderRef.current.querySelector(
+          "[data-content-area]"
+        ) as HTMLElement;
+        if (
+          contentArea &&
+          folder.visible &&
+          (isResizing.type === "height" || isResizing.type === "corner")
+        ) {
+          // Use requestAnimationFrame for smoother height updates
+          requestAnimationFrame(() => {
+            contentArea.style.height = `${newHeight}px`;
+            contentArea.style.maxHeight = `${newHeight}px`;
+          });
+        }
+      }
+    },
+    [isResizing, folder.visible]
+  );
+
+  const handleResizeEnd = useCallback(() => {
+    if (isResizing.type === null) return;
+
+    // Get the current dimensions from the DOM
+    if (folderRef.current) {
+      const rect = folderRef.current.getBoundingClientRect();
+      const contentArea = folderRef.current.querySelector(
+        "[data-content-area]"
+      ) as HTMLElement;
+
+      let newWidth = rect.width;
+      let newHeight = folder.maxHeight;
+
+      if (contentArea && folder.visible) {
+        const contentRect = contentArea.getBoundingClientRect();
+        newHeight = contentRect.height;
+      }
+
+      // Ensure values are within bounds
+      newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, newWidth));
+      newHeight = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, newHeight));
+
+      // Save to backend
+      resizeFolder(folder.id, Math.round(newWidth), Math.round(newHeight));
+    }
+
+    setIsResizing({
+      type: null,
+      startX: 0,
+      startY: 0,
+      startWidth: 0,
+      startHeight: 0,
+    });
+  }, [
+    isResizing.type,
+    folder.id,
+    folder.maxHeight,
+    folder.visible,
+    resizeFolder,
+  ]);
+
+  // Mouse event listeners for resizing
+  useEffect(() => {
+    if (isResizing.type !== null) {
+      document.addEventListener("mousemove", handleResizeMove);
+      document.addEventListener("mouseup", handleResizeEnd);
+      document.body.style.cursor =
+        isResizing.type === "width"
+          ? "ew-resize"
+          : isResizing.type === "height"
+          ? "ns-resize"
+          : "nw-resize";
+      document.body.style.userSelect = "none";
+
+      return () => {
+        document.removeEventListener("mousemove", handleResizeMove);
+        document.removeEventListener("mouseup", handleResizeEnd);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      };
+    }
+  }, [isResizing.type, handleResizeMove, handleResizeEnd]);
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -224,6 +399,7 @@ export default function TaskFolderComponent({
 
   return (
     <div
+      ref={folderRef}
       style={
         {
           "--folder-color": folderColor,
@@ -233,13 +409,14 @@ export default function TaskFolderComponent({
       className={`
         bg-gray-950 rounded-lg mb-3 overflow-hidden 
         transition-all duration-200 border
-        border-l-4 
+        border-l-4 relative
         ${
           isFolderSelected
             ? "!border-blue-500 !border-l-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.5)]"
             : "border-gray-800 border-l-[var(--folder-color)]"
         }
         ${isCurrentlyDragOver ? "ring-2 ring-[var(--folder-color)]/40" : ""}
+        ${isResizing.type !== null ? "transition-none" : ""}
       `}
       onContextMenu={isFolderBeingEdited ? undefined : handleContextMenu}
     >
@@ -574,21 +751,27 @@ export default function TaskFolderComponent({
         <div
           onClick={handleContainerClick}
           className={`
-            border-t transition-all duration-200 cursor-pointer
-            overflow-y-auto no-scrollbar
-            ${
-              isCurrentlyDragOver
-                ? `bg-[var(--folder-color)]/15 border-[var(--folder-color)]/30`
-                : "bg-gray-950/50 border-gray-800"
-            }
-            ${
-              isFolderSelected && !selectedTaskId
-                ? "ring-1 ring-blue-500/30 bg-blue-950/10"
-                : ""
-            }
-          `}
+          border-t cursor-pointer
+          overflow-y-auto no-scrollbar relative
+          ${
+            isResizing.type === "height" || isResizing.type === "corner"
+              ? ""
+              : "transition-all duration-200"
+          }
+          ${
+            isCurrentlyDragOver
+              ? `bg-[var(--folder-color)]/15 border-[var(--folder-color)]/30`
+              : "bg-gray-950/50 border-gray-800"
+          }
+          ${
+            isFolderSelected && !selectedTaskId
+              ? "ring-1 ring-blue-500/30 bg-blue-950/10"
+              : ""
+          }
+        `}
           style={{
             height: shouldShowEmptyState ? "4rem" : `${folder.maxHeight}px`,
+            maxHeight: `${folder.maxHeight}px`,
             background: isCurrentlyDragOver
               ? `linear-gradient(135deg, ${folderColor}15 0%, ${folderColor}08 100%)`
               : isFolderSelected && !selectedTaskId
@@ -596,6 +779,7 @@ export default function TaskFolderComponent({
               : `linear-gradient(135deg, ${folderColor}03 0%, transparent 100%)`,
           }}
           data-folder-drop-id={folder.id}
+          data-content-area
         >
           <div className="p-3 pt-2 space-y-2">
             {shouldShowEmptyState ? (
@@ -663,6 +847,56 @@ export default function TaskFolderComponent({
               ))
             )}
           </div>
+        </div>
+      )}
+
+      {/* Resize handles - only show when not editing and folder is visible */}
+      {!isFolderBeingEdited && (
+        <>
+          {/* Width resize handle (right edge) */}
+          <div
+            className="absolute top-0 right-0 w-2 cursor-ew-resize group/resize opacity-0 hover:opacity-100 transition-opacity duration-200"
+            style={{ height: folder.visible ? "calc(100% - 8px)" : "100%" }}
+            onMouseDown={(e) => handleResizeStart(e, "width")}
+            title="Resize width"
+          >
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gray-600 group-hover/resize:bg-blue-500 rounded-full transition-colors duration-200" />
+            <div className="absolute right-0.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/resize:opacity-100 transition-opacity duration-200">
+              <GripVertical className="w-3 h-3 text-gray-400" />
+            </div>
+          </div>
+
+          {/* Height resize handle (bottom edge) - only when visible */}
+          {folder.visible && (
+            <div
+              className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize group/resize opacity-0 hover:opacity-100 transition-opacity duration-200"
+              onMouseDown={(e) => handleResizeStart(e, "height")}
+              title="Resize height"
+            >
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-8 bg-gray-600 group-hover/resize:bg-blue-500 rounded-full transition-colors duration-200" />
+              <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 opacity-0 group-hover/resize:opacity-100 transition-opacity duration-200">
+                <GripHorizontal className="w-3 h-3 text-gray-400" />
+              </div>
+            </div>
+          )}
+
+          {/* Corner resize handle (bottom-right) - only when visible */}
+          {folder.visible && (
+            <div
+              className="absolute bottom-0 right-0 w-4 h-4 cursor-nw-resize group/resize opacity-0 hover:opacity-100 transition-opacity duration-200"
+              onMouseDown={(e) => handleResizeStart(e, "corner")}
+              title="Resize both width and height"
+            >
+              <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-gray-600 group-hover/resize:border-blue-500 transition-colors duration-200" />
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Resize overlay - shows constraints while resizing */}
+      {isResizing.type !== null && (
+        <div className="absolute -top-8 left-0 bg-gray-800/90 text-xs text-gray-300 px-2 py-1 rounded border border-gray-600 backdrop-blur-sm">
+          {folder.width}×{folder.maxHeight}px
         </div>
       )}
     </div>
