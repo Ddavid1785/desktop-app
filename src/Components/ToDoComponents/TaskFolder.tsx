@@ -219,13 +219,9 @@ export default function TaskFolderComponent({
         "[data-content-area]"
       ) as HTMLElement;
 
-      let currentWidth = folder.width;
+      // Get the actual computed style dimensions instead of just the folder properties
+      let currentWidth = currentRect ? currentRect.width : folder.width;
       let currentHeight = folder.height;
-
-      // Get actual current dimensions if available
-      if (currentRect) {
-        currentWidth = currentRect.width;
-      }
 
       if (contentArea && folder.visible) {
         const contentRect = contentArea.getBoundingClientRect();
@@ -259,6 +255,12 @@ export default function TaskFolderComponent({
           MIN_WIDTH,
           Math.min(MAX_WIDTH, isResizing.startWidth + deltaX)
         );
+
+        // Force apply the width immediately
+        if (folderRef.current) {
+          folderRef.current.style.width = `${newWidth}px`;
+          folderRef.current.style.minWidth = `${newWidth}px`;
+        }
       }
 
       if (isResizing.type === "height" || isResizing.type === "corner") {
@@ -266,29 +268,15 @@ export default function TaskFolderComponent({
           MIN_HEIGHT,
           Math.min(MAX_HEIGHT, isResizing.startHeight + deltaY)
         );
-      }
 
-      // Update immediately for smooth resizing
-      if (folderRef.current) {
-        // Update width - but preserve current width if we're only resizing height
-        if (isResizing.type === "width" || isResizing.type === "corner") {
-          folderRef.current.style.width = `${newWidth}px`;
-        }
-
-        // For height, update the content area directly
-        const contentArea = folderRef.current.querySelector(
+        // Force apply the height immediately
+        const contentArea = folderRef.current?.querySelector(
           "[data-content-area]"
         ) as HTMLElement;
-        if (
-          contentArea &&
-          folder.visible &&
-          (isResizing.type === "height" || isResizing.type === "corner")
-        ) {
-          // Use requestAnimationFrame for smoother height updates
-          requestAnimationFrame(() => {
-            contentArea.style.height = `${newHeight}px`;
-            contentArea.style.maxHeight = `${newHeight}px`;
-          });
+        if (contentArea && folder.visible) {
+          contentArea.style.height = `${newHeight}px`;
+          contentArea.style.maxHeight = `${newHeight}px`;
+          contentArea.style.minHeight = `${newHeight}px`;
         }
       }
     },
