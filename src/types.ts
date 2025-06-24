@@ -12,7 +12,7 @@ export interface TaskFolder{
      visible: boolean,
      tasks: Task[],
      width: number,
-     maxHeight: number,
+     height: number,
      x: number,
      y: number,
 }

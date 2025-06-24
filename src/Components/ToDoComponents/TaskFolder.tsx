@@ -15,10 +15,9 @@ import {
 import { ContextMenuData, TaskFolder, Task, DragData } from "../../types";
 import TaskComponent from "./Task";
 import { DropTarget } from "../../Hooks/DragAndDropHook";
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import CustomColorPicker from "../ColorPicker";
 import { createPortal } from "react-dom";
-import { useEffect } from "react";
 
 const COLORS = [
   { name: "Default", value: "#8b5cf6" }, // purple-600
@@ -64,6 +63,7 @@ export default function TaskFolderComponent({
   setShowCustomPicker,
   editingState,
   setEditingState,
+  moveFolderPosition,
 }: {
   folder: TaskFolder;
   toggleFolderVisibility: (folderId: string) => void;
@@ -119,6 +119,7 @@ export default function TaskFolderComponent({
       colour: string;
     } | null;
   }) => void;
+  moveFolderPosition: (folderId: string, newX: number, newY: number) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const colorButtonRef = useRef<HTMLButtonElement>(null);
@@ -133,6 +134,11 @@ export default function TaskFolderComponent({
     startHeight: number;
   }>({ type: null, startX: 0, startY: 0, startWidth: 0, startHeight: 0 });
 
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [justFinishedDragging, setJustFinishedDragging] = useState(false);
+
   const completedTasks = folder.tasks.filter((task) => task.completed).length;
   const totalTasks = folder.tasks.length;
   const remainingTasks = totalTasks - completedTasks;
@@ -140,6 +146,68 @@ export default function TaskFolderComponent({
   // Check if this folder is currently being edited
   const isFolderBeingEdited =
     editingState.type === "folder" && editingState.id === folder.id;
+
+  const handleDragStart = useCallback(
+    (e: React.MouseEvent) => {
+      if (isFolderBeingEdited) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const rect = folderRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      setIsDragging(true);
+      setDragStart({ x: e.clientX, y: e.clientY });
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+    },
+    [isFolderBeingEdited]
+  );
+
+  const handleDragMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging) return;
+
+      const newX = e.clientX - dragOffset.x;
+      const newY = e.clientY - dragOffset.y;
+
+      if (folderRef.current) {
+        folderRef.current.style.position = "fixed";
+        folderRef.current.style.left = `${newX}px`;
+        folderRef.current.style.top = `${newY}px`;
+        folderRef.current.style.zIndex = "1000";
+      }
+    },
+    [isDragging, dragOffset]
+  );
+
+  const handleDragEnd = useCallback(() => {
+    if (!isDragging) return;
+
+    if (folderRef.current) {
+      const rect = folderRef.current.getBoundingClientRect();
+
+      // Save the new position
+      moveFolderPosition(folder.id, rect.left, rect.top);
+
+      // Keep the position fixed after dragging
+      folderRef.current.style.position = "fixed";
+      folderRef.current.style.left = `${rect.left}px`;
+      folderRef.current.style.top = `${rect.top}px`;
+      folderRef.current.style.zIndex = "10";
+    }
+
+    setIsDragging(false);
+    setJustFinishedDragging(true);
+
+    // Clear the flag after a short delay
+    setTimeout(() => {
+      setJustFinishedDragging(false);
+    }, 150);
+  }, [isDragging, folder.id, moveFolderPosition]);
 
   // Resize handlers
   const handleResizeStart = useCallback(
@@ -154,7 +222,7 @@ export default function TaskFolderComponent({
       ) as HTMLElement;
 
       let currentWidth = folder.width;
-      let currentHeight = folder.maxHeight;
+      let currentHeight = folder.height;
 
       // Get actual current dimensions if available
       if (currentRect) {
@@ -174,7 +242,7 @@ export default function TaskFolderComponent({
         startHeight: currentHeight,
       });
     },
-    [folder.width, folder.maxHeight, folder.visible]
+    [folder.width, folder.height, folder.visible]
   );
 
   const handleResizeMove = useCallback(
@@ -240,7 +308,7 @@ export default function TaskFolderComponent({
       ) as HTMLElement;
 
       let newWidth = rect.width;
-      let newHeight = folder.maxHeight;
+      let newHeight = folder.height;
 
       if (contentArea && folder.visible) {
         const contentRect = contentArea.getBoundingClientRect();
@@ -262,13 +330,23 @@ export default function TaskFolderComponent({
       startWidth: 0,
       startHeight: 0,
     });
-  }, [
-    isResizing.type,
-    folder.id,
-    folder.maxHeight,
-    folder.visible,
-    resizeFolder,
-  ]);
+  }, [isResizing.type, folder.id, folder.height, folder.visible, resizeFolder]);
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener("mousemove", handleDragMove);
+      document.addEventListener("mouseup", handleDragEnd);
+      document.body.style.cursor = "grabbing";
+      document.body.style.userSelect = "none";
+
+      return () => {
+        document.removeEventListener("mousemove", handleDragMove);
+        document.removeEventListener("mouseup", handleDragEnd);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      };
+    }
+  }, [isDragging, handleDragMove, handleDragEnd]);
 
   // Mouse event listeners for resizing
   useEffect(() => {
@@ -373,7 +451,7 @@ export default function TaskFolderComponent({
   };
 
   const handleToggleVisibility = () => {
-    if (!isFolderBeingEdited) {
+    if (!isFolderBeingEdited && !isDragging && !justFinishedDragging) {
       toggleFolderVisibility(folder.id);
     }
   };
@@ -404,12 +482,26 @@ export default function TaskFolderComponent({
         {
           "--folder-color": folderColor,
           width: `${folder.width}px`,
+          minWidth: `${folder.width}px`,
+          position:
+            folder.x !== undefined && folder.y !== undefined
+              ? "fixed"
+              : "relative",
+          left: folder.x !== undefined ? `${folder.x}px` : "auto",
+          top: folder.y !== undefined ? `${folder.y}px` : "auto",
+          zIndex:
+            folder.x !== undefined && folder.y !== undefined ? 10 : "auto",
         } as React.CSSProperties
       }
       className={`
         bg-gray-950 rounded-lg mb-3 overflow-hidden 
         transition-all duration-200 border
         border-l-4 relative
+        ${
+          isDragging
+            ? "shadow-2xl ring-2 ring-blue-500/50 !transition-none"
+            : ""
+        }
         ${
           isFolderSelected
             ? "!border-blue-500 !border-l-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.5)]"
@@ -423,7 +515,11 @@ export default function TaskFolderComponent({
       {/* Enhanced header with editing capability */}
       <div
         className="group flex items-center gap-3 p-3 transition-all cursor-pointer relative overflow-hidden"
-        onClick={handleToggleVisibility}
+        onClick={() => {
+          if (!isDragging) {
+            handleToggleVisibility();
+          }
+        }}
         data-folder-drop-id={folder.id}
         style={{
           background: `linear-gradient(135deg, ${folderColor}08 0%, ${folderColor}04 50%, transparent 100%)`,
@@ -442,7 +538,13 @@ export default function TaskFolderComponent({
             <ChevronRight className="w-4 h-4" />
           )}
         </button>
-
+        <button
+          onMouseDown={handleDragStart}
+          className="text-gray-500 hover:text-gray-300 transition-colors cursor-grab active:cursor-grabbing p-1"
+          title="Drag to move folder"
+        >
+          <GripVertical className="w-3 h-3" />
+        </button>
         {/* Enhanced folder icon with subtle glow effect */}
         <div className="relative">
           <Folder
@@ -752,7 +854,7 @@ export default function TaskFolderComponent({
           onClick={handleContainerClick}
           className={`
           border-t cursor-pointer
-          overflow-y-auto no-scrollbar relative
+          overflow-hidden no-scrollbar relative
           ${
             isResizing.type === "height" || isResizing.type === "corner"
               ? ""
@@ -770,8 +872,10 @@ export default function TaskFolderComponent({
           }
         `}
           style={{
-            height: `${folder.maxHeight}px`,
-            maxHeight: `${folder.maxHeight}px`,
+            height: `${folder.height}px`,
+            maxHeight: `${folder.height}px`,
+            minHeight: `${folder.height}px`,
+            overflow: "hidden",
             background: isCurrentlyDragOver
               ? `linear-gradient(135deg, ${folderColor}15 0%, ${folderColor}08 100%)`
               : isFolderSelected && !selectedTaskId
@@ -795,7 +899,7 @@ export default function TaskFolderComponent({
                   }
                 `}
                 onClick={handleContainerClick}
-                style={{ height: `${folder.maxHeight - 32}px` }}
+                style={{ height: `${folder.height - 32}px` }}
               >
                 {isDragActive && isCurrentlyDragOver ? (
                   <div className="flex items-center gap-2">
@@ -897,7 +1001,7 @@ export default function TaskFolderComponent({
       {/* Resize overlay - shows constraints while resizing */}
       {isResizing.type !== null && (
         <div className="absolute -top-8 left-0 bg-gray-800/90 text-xs text-gray-300 px-2 py-1 rounded border border-gray-600 backdrop-blur-sm">
-          {folder.width}×{folder.maxHeight}px
+          {folder.width}×{folder.height}px
         </div>
       )}
     </div>

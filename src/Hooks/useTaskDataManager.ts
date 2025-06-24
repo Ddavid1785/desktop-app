@@ -80,7 +80,9 @@ export function useTaskDataManager() {
           folderId, 
           folderColor,
           folderWidth: 400,
-          folderMaxHeight: 200
+          folderHeight: 200,
+          folderPosX: 500,
+          folderPosY: 500
         });
         setTaskData(prev => [...prev, { 
           name: folderName, 
@@ -89,7 +91,7 @@ export function useTaskDataManager() {
           tasks: [], 
           colour: folderColor, 
           width: 400, 
-          maxHeight: 200,
+          height: 200,
           x: 500,
           y: 500
         }]);
@@ -103,7 +105,7 @@ export function useTaskDataManager() {
   const resizeFolder = async (folderId: string, newWidth: number, newHeight: number) => {
     try {
       await invoke("resize_folder", { folderId, newWidth, newHeight });
-      setTaskData((prev) => prev.map((f) => f.id === folderId ? { ...f, width: newWidth, maxHeight: newHeight } : f));
+      setTaskData((prev) => prev.map((f) => f.id === folderId ? { ...f, width: newWidth, height: newHeight } : f));
     } catch (error) {
       console.error("Failed to resize folder:", error);
       showToast("Failed to resize folder", "error");
@@ -112,11 +114,11 @@ export function useTaskDataManager() {
 
   const moveFolderPosition  = async (folderId: string, newX: number, newY: number) => {
     try {
-      await invoke("move_folder", { folderId, folderPosX: newX, folderPosY: newY });
+      await invoke("move_folder", { folderId, x: newX, y: newY });
       setTaskData((prev) => prev.map((f) => f.id === folderId ? { ...f, x: newX, y: newY } : f));
     } catch (error) {
-      console.error("Failed to resize folder:", error);
-      showToast("Failed to resize folder", "error");
+      console.error("Failed to move folder:", error);
+      showToast("Failed to move folder", "error");
     }
   }
 

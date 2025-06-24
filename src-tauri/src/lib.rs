@@ -9,14 +9,14 @@ use tauri::command;
 use types::Task;
 use types::TaskFolder;
 
-fn get_data_dir() -> PathBuf {
-    PathBuf::from(r"D:\ALIP\DesktopApp\SavedData")
-}
+//fn get_data_dir() -> PathBuf {
+// PathBuf::from(r"D:\ALIP\DesktopApp\SavedData")
+//}
 
-// fn get_data_dir() -> PathBuf {
-//     let base_dir = env::var("APPDATA").unwrap_or_else(|_| ".".to_string());
-//     PathBuf::from(base_dir).join("desktop-app")
-// }
+fn get_data_dir() -> PathBuf {
+    let base_dir = env::var("APPDATA").unwrap_or_else(|_| ".".to_string());
+    PathBuf::from(base_dir).join("desktop-app")
+}
 
 fn get_tasks_file() -> PathBuf {
     get_data_dir().join("Tasks.json")
@@ -105,7 +105,7 @@ fn create_folder(
     folder_id: String,
     folder_color: String,
     folder_width: i32,
-    folder_max_height: i32,
+    folder_height: i32,
     folder_pos_x: i32,
     folder_pos_y: i32,
 ) -> Result<(), String> {
@@ -116,7 +116,7 @@ fn create_folder(
         visible: true,
         tasks: Vec::new(),
         width: folder_width,
-        max_height: folder_max_height,
+        height: folder_height,
         x: folder_pos_x,
         y: folder_pos_y,
     };
@@ -232,7 +232,7 @@ fn resize_folder(folder_id: String, new_width: i32, new_height: i32) -> Result<(
     let mut folder_data = fetch_task_data()?;
     if let Some(found) = folder_data.iter_mut().find(|folder| folder.id == folder_id) {
         found.width = new_width;
-        found.max_height = new_height;
+        found.height = new_height;
     } else {
         return Err("Couldnt find folder with that id while editing".into());
     }

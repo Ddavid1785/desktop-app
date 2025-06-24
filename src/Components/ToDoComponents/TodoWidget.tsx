@@ -252,34 +252,42 @@ export default function ToDoWidget({
           isAddFormOpen={showAddForm}
         />
 
-        <div className="flex-1 space-y-4 pb-20">
+        <div className="flex-1 pb-20 relative">
           {taskData.map((folder) => (
-            <TaskFolderComponent
+            <div
               key={folder.id}
-              folder={folder}
-              toggleFolderVisibility={dataHandlers.toggleFolderVisibility}
-              toggleTaskCompletion={dataHandlers.toggleTaskCompletion}
-              deleteTask={dataHandlers.deleteTask}
-              duplicateTask={dataHandlers.duplicateTask}
-              deleteFolder={dataHandlers.deleteFolder}
-              onContextMenu={handleContextMenuWithHandlers}
-              onTaskDragStart={handleDragStartManual}
-              onTaskClick={handleTaskClick}
-              onContainerClick={handleContainerClick}
-              dropTarget={dropTarget}
-              draggedTask={draggedTask}
-              selectedTaskId={selectedTaskId}
-              selectedFolderId={selectedFolderId}
-              editTask={dataHandlers.editTask}
-              editFolder={dataHandlers.editFolder}
-              resizeFolder={dataHandlers.resizeFolder}
-              showColorMenu={showColorMenu}
-              setShowColorMenu={setShowColorMenu}
-              showCustomPicker={showCustomPicker}
-              setShowCustomPicker={setShowCustomPicker}
-              editingState={editingState}
-              setEditingState={setEditingState}
-            />
+              className={
+                folder.x === undefined || folder.y === undefined ? "mb-4" : ""
+              }
+            >
+              <TaskFolderComponent
+                key={folder.id}
+                folder={folder}
+                toggleFolderVisibility={dataHandlers.toggleFolderVisibility}
+                toggleTaskCompletion={dataHandlers.toggleTaskCompletion}
+                deleteTask={dataHandlers.deleteTask}
+                duplicateTask={dataHandlers.duplicateTask}
+                deleteFolder={dataHandlers.deleteFolder}
+                onContextMenu={handleContextMenuWithHandlers}
+                onTaskDragStart={handleDragStartManual}
+                onTaskClick={handleTaskClick}
+                onContainerClick={handleContainerClick}
+                dropTarget={dropTarget}
+                draggedTask={draggedTask}
+                selectedTaskId={selectedTaskId}
+                selectedFolderId={selectedFolderId}
+                editTask={dataHandlers.editTask}
+                editFolder={dataHandlers.editFolder}
+                resizeFolder={dataHandlers.resizeFolder}
+                showColorMenu={showColorMenu}
+                setShowColorMenu={setShowColorMenu}
+                showCustomPicker={showCustomPicker}
+                setShowCustomPicker={setShowCustomPicker}
+                editingState={editingState}
+                setEditingState={setEditingState}
+                moveFolderPosition={dataHandlers.moveFolderPosition}
+              />
+            </div>
           ))}
         </div>
 
