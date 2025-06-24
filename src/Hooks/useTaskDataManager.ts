@@ -110,7 +110,7 @@ export function useTaskDataManager() {
     }
   }
 
-  const moveFolder  = async (folderId: string, newX: number, newY: number) => {
+  const moveFolderPosition  = async (folderId: string, newX: number, newY: number) => {
     try {
       await invoke("move_folder", { folderId, folderPosX: newX, folderPosY: newY });
       setTaskData((prev) => prev.map((f) => f.id === folderId ? { ...f, x: newX, y: newY } : f));
@@ -374,7 +374,7 @@ const moveTaskToFolderAndReorder = async (
     duplicateFolder,
     moveTaskToFolder,
     resizeFolder,
-    moveFolder,
+    moveFolderPosition,
   };
 
   return { taskData, dataHandlers };

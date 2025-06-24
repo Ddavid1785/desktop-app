@@ -50,7 +50,7 @@ export interface TaskDataHandlers {
   editFolder: (folderId: string, newName: string, newColour: string) => void;
   duplicateFolder: (folderId: string) => void;
   resizeFolder: (folderId: string, newWidth: number, newHeight: number) => void;
-  moveFolder: (folderId: string, newX: number, newY: number) => void;
+  moveFolderPosition: (folderId: string, newX: number, newY: number) => void;
   // Cross-cutting operations
   moveTaskToFolder: (taskId: string, currentFolderId: string, newFolderId: string) => void;
   reorderTask: (taskId: string, folderId: string, newIndex: number) => void;
