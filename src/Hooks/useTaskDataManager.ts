@@ -101,13 +101,12 @@ export function useTaskDataManager() {
   const resizeFolder = async (folderId: string, newWidth: number, newHeight: number) => {
     try {
       await invoke("resize_folder", { folderId, newWidth, newHeight });
-      setTaskData((prev) => prev.map((f) => f.id === folderId ? { ...f, newWidth, newHeight } : f));
+      setTaskData((prev) => prev.map((f) => f.id === folderId ? { ...f, width: newWidth, maxHeight: newHeight } : f));
     } catch (error) {
       console.error("Failed to resize folder:", error);
       showToast("Failed to resize folder", "error");
     }
   }
-
 const moveTaskToFolder = async (taskId: string, currentFolderId: string, newFolderId: string) => {
     if (newFolderId === currentFolderId) return;
     try {

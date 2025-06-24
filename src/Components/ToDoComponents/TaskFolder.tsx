@@ -770,7 +770,7 @@ export default function TaskFolderComponent({
           }
         `}
           style={{
-            height: shouldShowEmptyState ? "4rem" : `${folder.maxHeight}px`,
+            height: `${folder.maxHeight}px`,
             maxHeight: `${folder.maxHeight}px`,
             background: isCurrentlyDragOver
               ? `linear-gradient(135deg, ${folderColor}15 0%, ${folderColor}08 100%)`
@@ -781,11 +781,11 @@ export default function TaskFolderComponent({
           data-folder-drop-id={folder.id}
           data-content-area
         >
-          <div className="p-3 pt-2 space-y-2">
+          <div className="p-3 pt-2 space-y-2 h-full overflow-y-auto no-scrollbar">
             {shouldShowEmptyState ? (
               <div
                 className={`
-                  text-center py-4 text-sm h-16 flex items-center justify-center transition-colors cursor-pointer
+                  text-center py-4 text-sm flex items-center justify-center transition-colors cursor-pointer
                   ${
                     isDragActive && isCurrentlyDragOver
                       ? "text-gray-300 font-medium"
@@ -795,6 +795,7 @@ export default function TaskFolderComponent({
                   }
                 `}
                 onClick={handleContainerClick}
+                style={{ height: `${folder.maxHeight - 32}px` }}
               >
                 {isDragActive && isCurrentlyDragOver ? (
                   <div className="flex items-center gap-2">
@@ -856,7 +857,7 @@ export default function TaskFolderComponent({
           {/* Width resize handle (right edge) */}
           <div
             className="absolute top-0 right-0 w-2 cursor-ew-resize group/resize opacity-0 hover:opacity-100 transition-opacity duration-200"
-            style={{ height: folder.visible ? "calc(100% - 8px)" : "100%" }}
+            style={{ height: "100%" }}
             onMouseDown={(e) => handleResizeStart(e, "width")}
             title="Resize width"
           >
