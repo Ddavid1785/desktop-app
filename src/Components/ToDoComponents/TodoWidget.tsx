@@ -261,7 +261,6 @@ export default function ToDoWidget({
               }
             >
               <TaskFolderComponent
-                key={folder.id}
                 folder={folder}
                 toggleFolderVisibility={dataHandlers.toggleFolderVisibility}
                 toggleTaskCompletion={dataHandlers.toggleTaskCompletion}

@@ -173,9 +173,23 @@ export default function TaskFolderComponent({
       const newY = e.clientY - dragOffset.y;
 
       if (folderRef.current) {
+        const rect = folderRef.current.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        // Calculate boundaries (keep at least 50px visible on each side)
+        const minX = -rect.width + 50;
+        const maxX = viewportWidth - 50;
+        const minY = 0; // Don't allow dragging above viewport
+        const maxY = viewportHeight - 50;
+
+        // Constrain the position
+        const constrainedX = Math.max(minX, Math.min(maxX, newX));
+        const constrainedY = Math.max(minY, Math.min(maxY, newY));
+
         folderRef.current.style.position = "fixed";
-        folderRef.current.style.left = `${newX}px`;
-        folderRef.current.style.top = `${newY}px`;
+        folderRef.current.style.left = `${constrainedX}px`;
+        folderRef.current.style.top = `${constrainedY}px`;
         folderRef.current.style.zIndex = "1000";
       }
     },
@@ -861,7 +875,6 @@ export default function TaskFolderComponent({
             height: `${folder.height}px`,
             maxHeight: `${folder.height}px`,
             minHeight: `${folder.height}px`,
-            overflow: "hidden",
             background: isCurrentlyDragOver
               ? `linear-gradient(135deg, ${folderColor}15 0%, ${folderColor}08 100%)`
               : isFolderSelected && !selectedTaskId

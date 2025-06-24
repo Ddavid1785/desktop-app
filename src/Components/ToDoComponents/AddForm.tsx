@@ -58,21 +58,26 @@ export default function AddForm({
   );
   const [folderColor, setFolderColor] = useState("#6366f1");
   const [showColorMenu, setShowColorMenu] = useState(false);
-  const [showCustomPicker, setShowCustomPicker] = useState(false);
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
-  const colorMenuRef = useRef(null);
-  const customColorPickerRef = useRef(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
+  const colorMenuRef = useRef(null);
+  const taskCustomColorPickerRef = useRef(null);
+  const folderCustomColorPickerRef = useRef(null);
 
   const isTaskMode = addFormMode === "task";
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      const activeCustomPickerRef = isTaskMode
+        ? taskCustomColorPickerRef
+        : folderCustomColorPickerRef;
+
       if (
         colorMenuRef.current &&
         !(colorMenuRef.current as HTMLElement).contains(event.target as Node) &&
-        customColorPickerRef.current &&
-        !(customColorPickerRef.current as HTMLElement).contains(
+        activeCustomPickerRef.current &&
+        !(activeCustomPickerRef.current as HTMLElement).contains(
           event.target as Node
         )
       ) {
@@ -82,7 +87,7 @@ export default function AddForm({
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [isTaskMode]);
 
   useEffect(() => {
     if (folders.length > 0 && !selectedFolderId) {
@@ -408,10 +413,10 @@ export default function AddForm({
                             style={{
                               top: "50%",
                               left: "50%",
-                              transform: "translate(50%, -25%)",
+                              transform: "translate(50%, -50%)",
                               zIndex: 9999,
                             }}
-                            ref={customColorPickerRef}
+                            ref={taskCustomColorPickerRef}
                           >
                             <CustomColorPicker
                               color={addingTask.colour}
@@ -703,7 +708,7 @@ export default function AddForm({
                               transform: "translate(-50%, -50%)",
                               zIndex: 9999,
                             }}
-                            ref={customColorPickerRef}
+                            ref={folderCustomColorPickerRef}
                           >
                             <CustomColorPicker
                               color={folderColor}
