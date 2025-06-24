@@ -135,7 +135,6 @@ export default function TaskFolderComponent({
   }>({ type: null, startX: 0, startY: 0, startWidth: 0, startHeight: 0 });
 
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [justFinishedDragging, setJustFinishedDragging] = useState(false);
 
@@ -158,7 +157,6 @@ export default function TaskFolderComponent({
       if (!rect) return;
 
       setIsDragging(true);
-      setDragStart({ x: e.clientX, y: e.clientY });
       setDragOffset({
         x: e.clientX - rect.left,
         y: e.clientY - rect.top,

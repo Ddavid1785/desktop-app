@@ -9,14 +9,14 @@ use tauri::command;
 use types::Task;
 use types::TaskFolder;
 
-//fn get_data_dir() -> PathBuf {
-// PathBuf::from(r"D:\ALIP\DesktopApp\SavedData")
-//}
-
 fn get_data_dir() -> PathBuf {
-    let base_dir = env::var("APPDATA").unwrap_or_else(|_| ".".to_string());
-    PathBuf::from(base_dir).join("desktop-app")
+    PathBuf::from(r"D:\ALIP\DesktopApp\SavedData")
 }
+
+//fn get_data_dir() -> PathBuf {
+//  let base_dir = env::var("APPDATA").unwrap_or_else(|_| ".".to_string());
+//  PathBuf::from(base_dir).join("desktop-app")
+//}
 
 fn get_tasks_file() -> PathBuf {
     get_data_dir().join("Tasks.json")
