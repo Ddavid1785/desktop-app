@@ -18,5 +18,6 @@ pub struct TaskFolder {
     pub tasks: Vec<Task>,
     pub width: i32,
     pub max_height: i32,
+    pub x: i32,
+    pub y: i32,
 }
-

@@ -89,7 +89,9 @@ export function useTaskDataManager() {
           tasks: [], 
           colour: folderColor, 
           width: 400, 
-          maxHeight: 200
+          maxHeight: 200,
+          x: 500,
+          y: 500
         }]);
         return folderId;
     } catch (e) {
@@ -107,6 +109,17 @@ export function useTaskDataManager() {
       showToast("Failed to resize folder", "error");
     }
   }
+
+  const moveFolder  = async (folderId: string, newX: number, newY: number) => {
+    try {
+      await invoke("move_folder", { folderId, folderPosX: newX, folderPosY: newY });
+      setTaskData((prev) => prev.map((f) => f.id === folderId ? { ...f, x: newX, y: newY } : f));
+    } catch (error) {
+      console.error("Failed to resize folder:", error);
+      showToast("Failed to resize folder", "error");
+    }
+  }
+
 const moveTaskToFolder = async (taskId: string, currentFolderId: string, newFolderId: string) => {
     if (newFolderId === currentFolderId) return;
     try {
@@ -361,6 +374,7 @@ const moveTaskToFolderAndReorder = async (
     duplicateFolder,
     moveTaskToFolder,
     resizeFolder,
+    moveFolder,
   };
 
   return { taskData, dataHandlers };
