@@ -100,7 +100,7 @@ export function useTaskDataManager() {
         return folderId;
     } catch (e) {
         showToast("Failed to create folder", "error");
-        console.log("error while creating folder",e);
+        console.error("error while creating folder",e);
         return null;
     }
   };
@@ -364,15 +364,21 @@ const moveTaskToFolderAndReorder = async (
   };
 
   const bringToFront = async (folderId: string) => {
-    const maxZ = Math.max(...taskData.map(f => f.zindex || 0));
-    await invoke("change_folder_zindex", { folderId, newZindex: maxZ + 1 });
-    setTaskData(prevData => {
-      return prevData.map(folder => 
-        folder.id === folderId 
-          ? { ...folder, zindex: maxZ + 1 }
-          : folder
-      );
-    });
+    try {
+      const maxZ = Math.max(...taskData.map(f => f.zindex || 0));
+      await invoke("change_folder_zindex", { folderId, newZindex: maxZ + 1 });
+      setTaskData(prevData => {
+        return prevData.map(folder => 
+          folder.id === folderId 
+            ? { ...folder, zindex: maxZ + 1 }
+            : folder
+        );
+      });
+    } catch (error) {
+      showToast("Couldnt change folder zindex");
+      console.error("Couldnt change folder zindex",error);
+    }
+
   };
 
   // Create the final handlers object that matches the TaskDataHandlers interface

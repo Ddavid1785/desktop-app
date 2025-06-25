@@ -129,8 +129,6 @@ export default function TaskFolderComponent({
   const colorButtonRef = useRef<HTMLButtonElement>(null);
   const folderRef = useRef<HTMLDivElement>(null);
 
-  console.log(folder);
-
   // Resize state
   const [isResizing, setIsResizing] = useState<{
     type: "width" | "height" | "corner" | null;
@@ -874,7 +872,7 @@ export default function TaskFolderComponent({
           onClick={handleContainerClick}
           className={`
           border-t cursor-pointer
-          overflow-hidden no-scrollbar relative
+          overflow-y-auto no-scrollbar relative
           ${
             isResizing.type === "height" || isResizing.type === "corner"
               ? ""
@@ -918,7 +916,7 @@ export default function TaskFolderComponent({
                   }
                 `}
                 onClick={handleContainerClick}
-                style={{ height: `${folder.height - 32}px` }}
+                style={{ height: `${folder.height - 32}px` }} // 32px accounts for container padding (p-3 = 12px * 2 + pt-2 = 8px)
               >
                 {isDragActive && isCurrentlyDragOver ? (
                   <div className="flex items-center gap-2">
