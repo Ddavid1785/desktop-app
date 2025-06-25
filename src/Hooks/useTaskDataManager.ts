@@ -82,7 +82,8 @@ export function useTaskDataManager() {
           folderWidth: 400,
           folderHeight: 200,
           folderPosX: 500,
-          folderPosY: 500
+          folderPosY: 500,
+          folderZindex: 1,
         });
         setTaskData(prev => [...prev, { 
           name: folderName, 
@@ -99,6 +100,7 @@ export function useTaskDataManager() {
         return folderId;
     } catch (e) {
         showToast("Failed to create folder", "error");
+        console.log("error while creating folder",e);
         return null;
     }
   };
@@ -360,10 +362,11 @@ const moveTaskToFolderAndReorder = async (
       showToast("Failed to update folder", "error");
     }
   };
-  
-  const bringToFront = (folderId: string) => {
+
+  const bringToFront = async (folderId: string) => {
+    const maxZ = Math.max(...taskData.map(f => f.zindex || 0));
+    await invoke("change_folder_zindex", { folderId, newZindex: maxZ + 1 });
     setTaskData(prevData => {
-      const maxZ = Math.max(...prevData.map(f => f.zindex || 0));
       return prevData.map(folder => 
         folder.id === folderId 
           ? { ...folder, zindex: maxZ + 1 }

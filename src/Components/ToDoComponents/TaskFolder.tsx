@@ -129,6 +129,8 @@ export default function TaskFolderComponent({
   const colorButtonRef = useRef<HTMLButtonElement>(null);
   const folderRef = useRef<HTMLDivElement>(null);
 
+  console.log(folder);
+
   // Resize state
   const [isResizing, setIsResizing] = useState<{
     type: "width" | "height" | "corner" | null;

@@ -108,6 +108,7 @@ fn create_folder(
     folder_height: i32,
     folder_pos_x: i32,
     folder_pos_y: i32,
+    folder_zindex: i32,
 ) -> Result<(), String> {
     let folder = TaskFolder {
         name: folder_name,
@@ -119,6 +120,7 @@ fn create_folder(
         height: folder_height,
         x: folder_pos_x,
         y: folder_pos_y,
+        zindex: folder_zindex,
     };
     let mut folder_data = fetch_task_data()?;
     folder_data.push(folder);
@@ -283,6 +285,18 @@ fn toggle_visability_folder(folder_id: String) -> Result<(), String> {
 }
 
 #[command]
+fn change_folder_zindex(folder_id: String, new_zindex: i32) -> Result<(), String> {
+    let mut folder_data = fetch_task_data()?;
+    if let Some(target_folder) = folder_data.iter_mut().find(|folder| folder.id == folder_id) {
+        target_folder.zindex = new_zindex;
+        write_to_task_json(folder_data)?;
+    } else {
+        return Err("Couldnt find target folder".to_string());
+    }
+    Ok(())
+}
+
+#[command]
 fn delete_tasks_folder(folder_id: String) -> Result<(), String> {
     let mut folder_data = fetch_task_data()?;
     folder_data.retain(|folder| folder.id != folder_id);
@@ -332,6 +346,7 @@ pub fn run() {
             edit_folder,
             resize_folder,
             move_folder,
+            change_folder_zindex
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
