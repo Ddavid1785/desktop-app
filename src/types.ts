@@ -15,6 +15,7 @@ export interface TaskFolder{
      height: number,
      x: number,
      y: number,
+     zindex: number,
 }
 
 export interface DragData {
@@ -52,6 +53,7 @@ export interface TaskDataHandlers {
   resizeFolder: (folderId: string, newWidth: number, newHeight: number) => void;
   moveFolderPosition: (folderId: string, newX: number, newY: number) => void;
   // Cross-cutting operations
+  bringToFront: (folderId: string) => void;
   moveTaskToFolder: (taskId: string, currentFolderId: string, newFolderId: string) => void;
   reorderTask: (taskId: string, folderId: string, newIndex: number) => void;
   moveTaskToFolderAndReorder: (taskId: string, currentFolderId: string, newFolderId: string, newIndex: number) => void;

@@ -285,6 +285,11 @@ export default function ToDoWidget({
                 editingState={editingState}
                 setEditingState={setEditingState}
                 moveFolderPosition={dataHandlers.moveFolderPosition}
+                bringToFront={dataHandlers.bringToFront}
+                clearSelected={() => {
+                  setSelectedFolderId(null);
+                  setSelectedTaskId(null);
+                }}
               />
             </div>
           ))}

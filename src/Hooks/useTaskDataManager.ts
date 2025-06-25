@@ -93,7 +93,8 @@ export function useTaskDataManager() {
           width: 400, 
           height: 200,
           x: 500,
-          y: 500
+          y: 500,
+          zindex: 1,
         }]);
         return folderId;
     } catch (e) {
@@ -360,6 +361,17 @@ const moveTaskToFolderAndReorder = async (
     }
   };
   
+  const bringToFront = (folderId: string) => {
+    setTaskData(prevData => {
+      const maxZ = Math.max(...prevData.map(f => f.zindex || 0));
+      return prevData.map(folder => 
+        folder.id === folderId 
+          ? { ...folder, zindex: maxZ + 1 }
+          : folder
+      );
+    });
+  };
+
   // Create the final handlers object that matches the TaskDataHandlers interface
   const dataHandlers: TaskDataHandlers = {
     toggleTaskCompletion,
@@ -377,6 +389,7 @@ const moveTaskToFolderAndReorder = async (
     moveTaskToFolder,
     resizeFolder,
     moveFolderPosition,
+    bringToFront,
   };
 
   return { taskData, dataHandlers };

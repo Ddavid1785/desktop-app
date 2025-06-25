@@ -64,6 +64,8 @@ export default function TaskFolderComponent({
   editingState,
   setEditingState,
   moveFolderPosition,
+  bringToFront,
+  clearSelected,
 }: {
   folder: TaskFolder;
   toggleFolderVisibility: (folderId: string) => void;
@@ -120,6 +122,8 @@ export default function TaskFolderComponent({
     } | null;
   }) => void;
   moveFolderPosition: (folderId: string, newX: number, newY: number) => void;
+  bringToFront: (folderId: string) => void;
+  clearSelected: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const colorButtonRef = useRef<HTMLButtonElement>(null);
@@ -153,6 +157,12 @@ export default function TaskFolderComponent({
       e.preventDefault();
       e.stopPropagation();
 
+      // Clear any selections and bring this folder to front
+      clearSelected();
+
+      // Bring this folder to front by updating its zIndex
+      bringToFront(folder.id);
+
       const rect = folderRef.current?.getBoundingClientRect();
       if (!rect) return;
 
@@ -162,7 +172,7 @@ export default function TaskFolderComponent({
         y: e.clientY - rect.top,
       });
     },
-    [isFolderBeingEdited]
+    [isFolderBeingEdited, folder.id, bringToFront, clearSelected]
   );
 
   const handleDragMove = useCallback(
@@ -190,7 +200,7 @@ export default function TaskFolderComponent({
         folderRef.current.style.position = "fixed";
         folderRef.current.style.left = `${constrainedX}px`;
         folderRef.current.style.top = `${constrainedY}px`;
-        folderRef.current.style.zIndex = "1000";
+        folderRef.current.style.zIndex = "9999"; // Very high zIndex while dragging
       }
     },
     [isDragging, dragOffset]
@@ -205,11 +215,15 @@ export default function TaskFolderComponent({
       // Save the new position
       moveFolderPosition(folder.id, rect.left, rect.top);
 
+      // Ensure this folder stays on top after dropping
+      bringToFront(folder.id);
+
       // Keep the position fixed after dragging
       folderRef.current.style.position = "fixed";
       folderRef.current.style.left = `${rect.left}px`;
       folderRef.current.style.top = `${rect.top}px`;
-      folderRef.current.style.zIndex = "10";
+      // Remove the temporary high zIndex - let the data's zIndex take over
+      folderRef.current.style.zIndex = "";
     }
 
     setIsDragging(false);
@@ -219,7 +233,7 @@ export default function TaskFolderComponent({
     setTimeout(() => {
       setJustFinishedDragging(false);
     }, 150);
-  }, [isDragging, folder.id, moveFolderPosition]);
+  }, [isDragging, folder.id, moveFolderPosition, bringToFront]);
 
   // Resize handlers
   const handleResizeStart = useCallback(
@@ -386,6 +400,7 @@ export default function TaskFolderComponent({
     const isClickOnTask = target.closest("[data-task-id]");
 
     if (!isClickOnTask && !isFolderBeingEdited) {
+      bringToFront(folder.id); // Add this line
       onContainerClick(folder.id);
     }
   };
@@ -490,7 +505,9 @@ export default function TaskFolderComponent({
           left: folder.x !== undefined ? `${folder.x}px` : "auto",
           top: folder.y !== undefined ? `${folder.y}px` : "auto",
           zIndex:
-            folder.x !== undefined && folder.y !== undefined ? 10 : "auto",
+            folder.x !== undefined && folder.y !== undefined
+              ? folder.zindex || 10
+              : "auto",
         } as React.CSSProperties
       }
       className={`
@@ -499,7 +516,7 @@ export default function TaskFolderComponent({
         border-l-4 relative
         ${
           isDragging
-            ? "shadow-2xl ring-2 ring-blue-500/50 !transition-none"
+            ? "shadow-2xl ring-2 ring-blue-500/50 !transition-none !z-[9999]"
             : ""
         }
         ${
@@ -517,6 +534,7 @@ export default function TaskFolderComponent({
         className="group flex items-center gap-3 p-3 transition-all cursor-pointer relative overflow-hidden"
         onClick={() => {
           if (!isDragging) {
+            bringToFront(folder.id); // Add this line
             handleToggleVisibility();
           }
         }}
