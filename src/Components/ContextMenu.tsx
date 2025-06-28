@@ -9,8 +9,16 @@ interface ContextMenuProps {
   themeColor?: string;
 }
 
-export default function ContextMenu({ show, x, y, onClose, children, themeColor }: ContextMenuProps) {
+export default function ContextMenu({
+  show,
+  x,
+  y,
+  onClose,
+  children,
+  themeColor,
+}: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const PORTAL_ZINDEX = 999999999;
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -37,27 +45,27 @@ export default function ContextMenu({ show, x, y, onClose, children, themeColor 
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 animate-in fade-in-0 zoom-in-95 duration-200"
-      style={{ left: adjustedX, top: adjustedY }}
+      className="fixed animate-in fade-in-0 zoom-in-95 duration-200"
+      style={{ left: adjustedX, top: adjustedY, zIndex: PORTAL_ZINDEX }}
       onClick={handleClickInside}
     >
       <div
         className="bg-gray-900/95 backdrop-blur-md border border-gray-700/50 rounded-xl shadow-2xl overflow-hidden relative"
-        style={{ 
-          boxShadow: `0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px ${themeColor || '#4b5563'}40`
+        style={{
+          boxShadow: `0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px ${
+            themeColor || "#4b5563"
+          }40`,
         }}
       >
         {/* Subtle accent line */}
-        <div 
+        <div
           className="absolute top-0 left-0 right-0 h-0.5 opacity-60"
-          style={{ backgroundColor: themeColor || '#4b5563' }}
+          style={{ backgroundColor: themeColor || "#4b5563" }}
         />
-        
+
         {/* Menu content */}
-        <div className="relative">
-          {children}
-        </div>
-        
+        <div className="relative">{children}</div>
+
         {/* Subtle bottom accent */}
         <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-gray-600/30 to-transparent" />
       </div>

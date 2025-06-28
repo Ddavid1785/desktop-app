@@ -38,6 +38,8 @@ const COLORS = [
   { name: "Amber", value: "#d97706" }, // amber-600
 ];
 
+const PORTAL_ZINDEX = 999999999;
+
 export default function AddForm({
   showAddForm,
   isAddFormOpen,
@@ -64,6 +66,12 @@ export default function AddForm({
   const colorMenuRef = useRef(null);
   const taskCustomColorPickerRef = useRef(null);
   const folderCustomColorPickerRef = useRef(null);
+  const folderButtonRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  }>({ top: 0, left: 0, width: 0 });
 
   const isTaskMode = addFormMode === "task";
 
@@ -138,6 +146,21 @@ export default function AddForm({
     selectedFolderId,
     newFolderName,
   ]);
+
+  const handleShowFolderDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowFolderDropdown((prev) => {
+      if (!prev && folderButtonRef.current) {
+        const rect = folderButtonRef.current.getBoundingClientRect();
+        setDropdownPos({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+      }
+      return !prev;
+    });
+  };
 
   const handleChangeOnInputForTask = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -444,10 +467,8 @@ export default function AddForm({
 
                   <div className="relative">
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowFolderDropdown(!showFolderDropdown);
-                      }}
+                      ref={folderButtonRef}
+                      onClick={handleShowFolderDropdown}
                       className="
                         w-full px-4 py-3 bg-gray-800/60 border border-gray-700/50 rounded-xl 
                         text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 
@@ -479,61 +500,67 @@ export default function AddForm({
                       <ChevronDown size={16} className="text-gray-400" />
                     </button>
 
-                    {showFolderDropdown && (
-                      <div
-                        className="
-                          absolute top-full left-0 right-0 mt-2 z-10
-                          bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 
-                          rounded-xl shadow-2xl py-2 animate-in fade-in-0 zoom-in-95 duration-200 px-1
-                        "
-                        style={{
-                          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8)",
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {folders.map((folder) => (
-                          <button
-                            key={folder.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleFolderSelect(folder.id);
-                            }}
-                            className={`
-                              w-full flex items-center gap-3 px-4 py-3 text-sm text-left 
-                              transition-all duration-150 hover:translate-x-1 group
-                              ${
-                                selectedFolderId === folder.id
-                                  ? "bg-gray-800/80"
-                                  : "hover:bg-gray-800/60"
-                              }
-                            `}
-                          >
-                            <Folder
-                              size={16}
-                              style={{ color: folder.colour }}
-                              className={`group-hover:scale-110 transition-transform ${
-                                selectedFolderId === folder.id
-                                  ? "scale-110"
-                                  : ""
-                              }`}
-                            />
-                            <span
-                              className={`font-medium transition-colors ${
-                                selectedFolderId === folder.id
-                                  ? "text-white"
-                                  : ""
-                              }`}
-                              style={{ color: folder.colour }}
+                    {showFolderDropdown &&
+                      createPortal(
+                        <div
+                          className="
+        bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 
+        rounded-xl shadow-2xl py-2 animate-in fade-in-0 zoom-in-95 duration-200 px-1
+      "
+                          style={{
+                            position: "absolute",
+                            top: dropdownPos.top,
+                            left: dropdownPos.left,
+                            width: dropdownPos.width,
+                            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8)",
+                            zIndex: PORTAL_ZINDEX,
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {folders.map((folder) => (
+                            <button
+                              key={folder.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleFolderSelect(folder.id);
+                              }}
+                              className={`
+            w-full flex items-center gap-3 px-4 py-3 text-sm text-left 
+            transition-all duration-150 hover:translate-x-1 group hover:cursor-pointer
+            ${
+              selectedFolderId === folder.id
+                ? "bg-gray-800/80"
+                : "hover:bg-gray-800/60"
+            }
+          `}
                             >
-                              {folder.name}
-                            </span>
-                            {selectedFolderId === folder.id && (
-                              <Check className="w-4 h-4 ml-auto text-white" />
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                              <Folder
+                                size={16}
+                                style={{ color: folder.colour }}
+                                className={`group-hover:scale-110 transition-transform ${
+                                  selectedFolderId === folder.id
+                                    ? "scale-110"
+                                    : ""
+                                }`}
+                              />
+                              <span
+                                className={`font-medium transition-colors ${
+                                  selectedFolderId === folder.id
+                                    ? "text-white"
+                                    : ""
+                                }`}
+                                style={{ color: folder.colour }}
+                              >
+                                {folder.name}
+                              </span>
+                              {selectedFolderId === folder.id && (
+                                <Check className="w-4 h-4 ml-auto text-white" />
+                              )}
+                            </button>
+                          ))}
+                        </div>,
+                        document.body
+                      )}
                   </div>
                 </div>
 

@@ -145,6 +145,7 @@ export default function TaskFolderComponent({
   const completedTasks = folder.tasks.filter((task) => task.completed).length;
   const totalTasks = folder.tasks.length;
   const remainingTasks = totalTasks - completedTasks;
+  const PORTAL_ZINDEX = 999999999;
 
   // Check if this folder is currently being edited
   const isFolderBeingEdited =
@@ -639,13 +640,14 @@ export default function TaskFolderComponent({
                 !showCustomPicker &&
                 createPortal(
                   <div
-                    className="fixed inset-0 z-50"
+                    className="fixed inset-0"
+                    style={{ zIndex: PORTAL_ZINDEX }}
                     onClick={() => setShowColorMenu(false)}
                   >
                     <div
                       className="
                       absolute p-4 bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 
-                      rounded-2xl shadow-2xl z-10 w-60 overflow-hidden
+                      rounded-2xl shadow-2xl w-60 overflow-hidden
                     "
                       style={{
                         left: colorButtonRef.current?.getBoundingClientRect()
@@ -660,6 +662,7 @@ export default function TaskFolderComponent({
                           : 0,
                         boxShadow:
                           "0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)",
+                        zIndex: PORTAL_ZINDEX + 1,
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -731,11 +734,12 @@ export default function TaskFolderComponent({
               {showCustomPicker &&
                 createPortal(
                   <div
-                    className="fixed inset-0 z-50"
+                    className="fixed inset-0"
+                    style={{ zIndex: PORTAL_ZINDEX }}
                     onClick={() => setShowCustomPicker(false)}
                   >
                     <div
-                      className="absolute z-50"
+                      className="absolute"
                       style={{
                         left: colorButtonRef.current?.getBoundingClientRect()
                           .left
@@ -747,6 +751,7 @@ export default function TaskFolderComponent({
                           ? colorButtonRef.current.getBoundingClientRect()
                               .bottom + 8
                           : 0,
+                        zIndex: PORTAL_ZINDEX + 1,
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -814,7 +819,7 @@ export default function TaskFolderComponent({
               onClick={handleEditClick}
               className="
                 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-yellow-400 
-                transition-all duration-200 p-1.5 rounded-md hover:bg-gray-800/60 hover:scale-110
+                transition-all duration-200 p-1.5 rounded-md hover:bg-gray-800/60 hover:scale-110 hover:cursor-pointer
                 relative overflow-hidden group/btn focus:outline-none
               "
               title="Edit folder"

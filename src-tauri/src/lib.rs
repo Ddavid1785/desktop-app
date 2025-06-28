@@ -1,22 +1,25 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 mod types;
+use imap::Session;
+use native_tls::TlsConnector;
 use std::env;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
+use std::net::TcpStream;
 use std::path::PathBuf;
 use tauri::command;
 use types::Task;
 use types::TaskFolder;
 
-fn get_data_dir() -> PathBuf {
-    PathBuf::from(r"D:\ALIP\DesktopApp\SavedData")
-}
+// fn get_data_dir() -> PathBuf {
+//     PathBuf::from(r"D:\ALIP\DesktopApp\SavedData")
+// }
 
-//fn get_data_dir() -> PathBuf {
-//  let base_dir = env::var("APPDATA").unwrap_or_else(|_| ".".to_string());
-//  PathBuf::from(base_dir).join("desktop-app")
-//}
+fn get_data_dir() -> PathBuf {
+    let base_dir = env::var("APPDATA").unwrap_or_else(|_| ".".to_string());
+    PathBuf::from(base_dir).join("desktop-app")
+}
 
 fn get_tasks_file() -> PathBuf {
     get_data_dir().join("Tasks.json")
@@ -326,6 +329,11 @@ fn move_task_to_folder(
     Ok(())
 }
 
+#[command]
+fn connect_imap(email: &str, app_password: &str) -> Result<(), String> {
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -346,7 +354,8 @@ pub fn run() {
             edit_folder,
             resize_folder,
             move_folder,
-            change_folder_zindex
+            change_folder_zindex,
+            connect_imap
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

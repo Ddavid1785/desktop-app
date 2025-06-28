@@ -20,6 +20,8 @@ const COLORS = [
   { name: "Amber", value: "#d97706" }, // amber-600
 ];
 
+const PORTAL_ZINDEX = 999999999;
+
 export default function TaskComponent({
   task,
   folderId,
@@ -450,7 +452,8 @@ export default function TaskComponent({
                 !showCustomPicker &&
                 createPortal(
                   <div
-                    className="fixed inset-0 z-50"
+                    className="fixed inset-0"
+                    style={{ zIndex: PORTAL_ZINDEX }}
                     onClick={() => setShowColorMenu(false)}
                   >
                     <div
@@ -471,6 +474,7 @@ export default function TaskComponent({
                           : 0,
                         boxShadow:
                           "0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)",
+                        zIndex: PORTAL_ZINDEX + 1,
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -542,11 +546,12 @@ export default function TaskComponent({
               {showCustomPicker &&
                 createPortal(
                   <div
-                    className="fixed inset-0 z-50"
+                    className="fixed inset-0"
+                    style={{ zIndex: PORTAL_ZINDEX }}
                     onClick={() => setShowCustomPicker(false)}
                   >
                     <div
-                      className="absolute z-50"
+                      className="absolute"
                       style={{
                         left: colorButtonRef.current?.getBoundingClientRect()
                           .left
@@ -558,6 +563,7 @@ export default function TaskComponent({
                           ? colorButtonRef.current.getBoundingClientRect()
                               .bottom + 8
                           : 0,
+                        zIndex: PORTAL_ZINDEX + 1,
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
