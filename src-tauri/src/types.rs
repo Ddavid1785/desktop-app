@@ -22,3 +22,9 @@ pub struct TaskFolder {
     pub y: i32,
     pub zindex: i32,
 }
+#[derive(Serialize, Deserialize, Clone)]
+pub struct EmailAccount {
+    pub email: String,
+    pub app_password: String,
+    pub label: Option<String>,
+}

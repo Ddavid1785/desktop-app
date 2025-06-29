@@ -1,14 +1,13 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 mod types;
-use imap::Session;
 use native_tls::TlsConnector;
 use std::env;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
-use std::net::TcpStream;
 use std::path::PathBuf;
 use tauri::command;
+use types::EmailAccount;
 use types::Task;
 use types::TaskFolder;
 
@@ -23,6 +22,10 @@ fn get_data_dir() -> PathBuf {
 
 fn get_tasks_file() -> PathBuf {
     get_data_dir().join("Tasks.json")
+}
+
+fn get_email_data_file() -> PathBuf {
+    get_data_dir().join("EmailData.json")
 }
 
 fn initialize_data_folder() -> Result<(), String> {
@@ -54,9 +57,31 @@ fn initialize_tasks_json() -> Result<(), String> {
     Ok(())
 }
 
+fn initialize_email_data_json() -> Result<(), String> {
+    let email_data_file_path = get_email_data_file();
+
+    let mut email_data_file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .open(&email_data_file_path)
+        .map_err(|e| e.to_string())?;
+
+    let metadata = email_data_file.metadata().map_err(|e| e.to_string())?;
+    let len = metadata.len();
+    if len == 0 {
+        let emails = Vec::<EmailAccount>::new();
+        let json = serde_json::to_string_pretty(&emails).map_err(|e| e.to_string())?;
+        email_data_file
+            .write_all(json.as_bytes())
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 pub fn setup() -> Result<(), String> {
     initialize_data_folder()?;
     initialize_tasks_json()?;
+    initialize_email_data_json()?;
     Ok(())
 }
 
@@ -331,6 +356,64 @@ fn move_task_to_folder(
 
 #[command]
 fn connect_imap(email: &str, app_password: &str) -> Result<(), String> {
+    let tls = TlsConnector::builder().build().map_err(|e| e.to_string())?;
+    let client = imap::connect(("imap.gmail.com", 993), "imap.gmail.com", &tls)
+        .map_err(|e| e.to_string())?;
+    let _session = client
+        .login(email, app_password)
+        .map_err(|e| e.0.to_string())?;
+    Ok(())
+}
+
+#[command]
+fn fetch_email_login_data() -> Result<Vec<EmailAccount>, String> {
+    let file_path: PathBuf = get_email_data_file();
+    let email_data_file = OpenOptions::new()
+        .read(true)
+        .open(&file_path)
+        .map_err(|e| e.to_string())?;
+    let email_data: Vec<EmailAccount> =
+        serde_json::from_reader(&email_data_file).map_err(|e| e.to_string())?;
+    Ok(email_data)
+}
+
+fn write_to_email_data_json(email_data: Vec<EmailAccount>) -> Result<(), String> {
+    let file_path: PathBuf = get_email_data_file();
+    let email_data_file = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(&file_path)
+        .map_err(|e| e.to_string())?;
+    serde_json::to_writer_pretty(&email_data_file, &email_data).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[command]
+fn add_email(email_data: EmailAccount) -> Result<(), String> {
+    let mut email_login_data = fetch_email_login_data()?;
+    if email_login_data
+        .iter()
+        .any(|data| data.email == email_data.email)
+    {
+        return Err("Email already exists".to_string());
+    }
+    email_login_data.push(email_data);
+    write_to_email_data_json(email_login_data)?;
+    Ok(())
+}
+
+#[command]
+fn remove_email(email_data: EmailAccount) -> Result<(), String> {
+    let mut email_login_data = fetch_email_login_data()?;
+    if email_login_data
+        .iter()
+        .any(|data| data.email == email_data.email)
+    {
+        email_login_data.retain(|data| data.email != email_data.email);
+        write_to_email_data_json(email_login_data)?;
+    } else {
+        return Err("Couldnt find that email".to_string());
+    }
     Ok(())
 }
 
@@ -355,7 +438,8 @@ pub fn run() {
             resize_folder,
             move_folder,
             change_folder_zindex,
-            connect_imap
+            add_email,
+            remove_email,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
