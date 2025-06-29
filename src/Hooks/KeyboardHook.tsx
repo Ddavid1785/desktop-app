@@ -3,14 +3,14 @@ import { Task, TaskDataHandlers, TaskFolder } from "../types";
 
 interface KeyboardShortcutsProps {
   taskData: TaskFolder[];
-  handlers:TaskDataHandlers;
+  handlers: TaskDataHandlers;
   selectedTaskId: string | null;
   selectedFolderId: string | null;
   setShowAddForm: (show: boolean) => void;
   setAddFormMode: (mode: "task" | "folder") => void;
   onShowToast?: (message: string, type?: "success" | "error" | "info") => void;
   editingState: {
-    type: 'task' | 'folder' | null;
+    type: "task" | "folder" | null;
     id: string | null;
     data: {
       text?: string;
@@ -19,7 +19,7 @@ interface KeyboardShortcutsProps {
     } | null;
   };
   setEditingState: (state: {
-    type: 'task' | 'folder' | null;
+    type: "task" | "folder" | null;
     id: string | null;
     data: {
       text?: string;
@@ -119,9 +119,7 @@ export function useKeyboardShortcuts({
           );
           lastActionRef.current = "duplicate-task";
         } else if (selectedFolderId) {
-          const folder = taskData.find(
-            (f) => f.id === selectedFolderId
-          );
+          const folder = taskData.find((f) => f.id === selectedFolderId);
           if (folder) {
             handlers.duplicateFolder(selectedFolderId);
             onShowToast?.(`Duplicated folder: "${folder.name}"`, "success");
@@ -140,9 +138,7 @@ export function useKeyboardShortcuts({
           onShowToast?.(`Deleted task: "${selectedTask.task.text}"`, "success");
           lastActionRef.current = "delete-task";
         } else if (selectedFolderId) {
-          const folder = taskData.find(
-            (f) => f.id === selectedFolderId
-          );
+          const folder = taskData.find((f) => f.id === selectedFolderId);
           if (folder) {
             handlers.deleteFolder(selectedFolderId);
             onShowToast?.(`Deleted folder: "${folder.name}"`, "success");
@@ -188,7 +184,11 @@ export function useKeyboardShortcuts({
       // QUICK ADD TASK (Alt + N)
       if (isAlt && e.key.toLowerCase() === "n") {
         e.preventDefault();
-        const quickTask = { text: "New Task", completed: false, colour: "#111827" };
+        const quickTask = {
+          text: "New Task",
+          completed: false,
+          colour: "#111827",
+        };
         const targetFolderId = selectedFolderId ?? "no id provided";
         handlers.addTask(quickTask, targetFolderId);
         onShowToast?.("Quick task added", "success");
@@ -209,11 +209,11 @@ export function useKeyboardShortcuts({
         if (selectedTask) {
           // Start editing the selected task
           setEditingState({
-            type: 'task',
+            type: "task",
             id: selectedTask.task.id,
             data: {
               text: selectedTask.task.text,
-              colour: selectedTask.task.colour || '#6366f1',
+              colour: selectedTask.task.colour || "#6366f1",
             },
           });
           lastActionRef.current = "edit-task";
@@ -222,11 +222,11 @@ export function useKeyboardShortcuts({
           const folder = taskData.find((f) => f.id === selectedFolderId);
           if (folder) {
             setEditingState({
-              type: 'folder',
+              type: "folder",
               id: folder.id,
               data: {
                 name: folder.name,
-                colour: folder.colour || '#8b5cf6',
+                colour: folder.colour || "#8b5cf6",
               },
             });
             lastActionRef.current = "edit-folder";
@@ -238,20 +238,30 @@ export function useKeyboardShortcuts({
       }
 
       // Arrow keys for navigation
-      if (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      if (
+        e.key === "ArrowUp" ||
+        e.key === "ArrowDown" ||
+        e.key === "ArrowLeft" ||
+        e.key === "ArrowRight"
+      ) {
         e.preventDefault();
-        
+
         // Left/Right arrows - navigate between folders only
         if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-          const currentFolderIndex = taskData.findIndex(folder => folder.id === selectedFolderId);
+          const currentFolderIndex = taskData.findIndex(
+            (folder) => folder.id === selectedFolderId
+          );
           if (currentFolderIndex !== -1) {
             let newFolderIndex = currentFolderIndex;
             if (e.key === "ArrowLeft") {
               newFolderIndex = Math.max(0, currentFolderIndex - 1);
             } else {
-              newFolderIndex = Math.min(taskData.length - 1, currentFolderIndex + 1);
+              newFolderIndex = Math.min(
+                taskData.length - 1,
+                currentFolderIndex + 1
+              );
             }
-            
+
             if (newFolderIndex !== currentFolderIndex) {
               const newFolder = taskData[newFolderIndex];
               setSelectedFolderId(newFolder.id);
@@ -269,41 +279,45 @@ export function useKeyboardShortcuts({
         // Up/Down arrows - navigate through all items (folders and tasks) in order
         if (e.key === "ArrowUp" || e.key === "ArrowDown") {
           // Create a flat list of all items in order
-          const allItems: Array<{ type: 'folder' | 'task', id: string, folderId?: string }> = [];
-          taskData.forEach(folder => {
+          const allItems: Array<{
+            type: "folder" | "task";
+            id: string;
+            folderId?: string;
+          }> = [];
+          taskData.forEach((folder) => {
             // Add folder
-            allItems.push({ type: 'folder', id: folder.id });
+            allItems.push({ type: "folder", id: folder.id });
             // Add tasks in this folder
-            folder.tasks.forEach(task => {
-              allItems.push({ type: 'task', id: task.id, folderId: folder.id });
+            folder.tasks.forEach((task) => {
+              allItems.push({ type: "task", id: task.id, folderId: folder.id });
             });
           });
 
           // Find current item index - check both selectedTaskId and selectedFolderId
           let currentItemIndex = -1;
           if (selectedTaskId) {
-            currentItemIndex = allItems.findIndex(item => 
-              item.type === 'task' && item.id === selectedTaskId
+            currentItemIndex = allItems.findIndex(
+              (item) => item.type === "task" && item.id === selectedTaskId
             );
           } else if (selectedFolderId) {
-            currentItemIndex = allItems.findIndex(item => 
-              item.type === 'folder' && item.id === selectedFolderId
+            currentItemIndex = allItems.findIndex(
+              (item) => item.type === "folder" && item.id === selectedFolderId
             );
           }
 
-          console.log('Navigation debug:', {
+          console.log("Navigation debug:", {
             selectedTaskId,
             selectedFolderId,
             currentItemIndex,
-            allItems: allItems.map(item => `${item.type}:${item.id}`),
-            key: e.key
+            allItems: allItems.map((item) => `${item.type}:${item.id}`),
+            key: e.key,
           });
 
           if (currentItemIndex === -1) {
             // No selection, select first item
             if (allItems.length > 0) {
               const firstItem = allItems[0];
-              if (firstItem.type === 'folder') {
+              if (firstItem.type === "folder") {
                 setSelectedFolderId(firstItem.id);
                 setSelectedTaskId(null);
               } else {
@@ -322,17 +336,17 @@ export function useKeyboardShortcuts({
             newIndex = Math.min(allItems.length - 1, currentItemIndex + 1);
           }
 
-          console.log('Navigation update:', {
+          console.log("Navigation update:", {
             currentItemIndex,
             newIndex,
             currentItem: allItems[currentItemIndex],
-            newItem: allItems[newIndex]
+            newItem: allItems[newIndex],
           });
 
           // Update selection
           if (newIndex !== currentItemIndex) {
             const newItem = allItems[newIndex];
-            if (newItem.type === 'folder') {
+            if (newItem.type === "folder") {
               setSelectedFolderId(newItem.id);
               setSelectedTaskId(null);
             } else {
@@ -377,9 +391,13 @@ export function KeyboardShortcutsHelp({ onClose }: { onClose: () => void }) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+  const PORTAL_ZINDEX = 999999999;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center"
+      style={{ zIndex: PORTAL_ZINDEX }}
+    >
       <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-md w-full mx-4">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-white">

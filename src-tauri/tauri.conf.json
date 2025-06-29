@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "desktop-app",
-        "width": 1800,
-        "height": 960
+        "width": 2400,
+        "height": 1200
       }
     ],
     "security": {

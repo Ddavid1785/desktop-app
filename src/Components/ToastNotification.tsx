@@ -21,7 +21,7 @@ function ToastItem({ toast, onRemove }: ToastProps) {
 
     return () => clearTimeout(timer);
   }, [toast.id, toast.duration, onRemove]);
-
+  const PORTAL_ZINDEX = 999999999;
   const getIcon = () => {
     switch (toast.type) {
       case "success":
@@ -47,6 +47,7 @@ function ToastItem({ toast, onRemove }: ToastProps) {
   return (
     <div
       className={`flex items-center gap-3 p-3 rounded-lg border backdrop-blur-sm ${getStyles()} animate-in slide-in-from-right duration-300`}
+      style={{ zIndex: PORTAL_ZINDEX }}
     >
       {getIcon()}
       <span className="text-sm font-medium flex-1">{toast.message}</span>
