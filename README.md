@@ -20,4 +20,4 @@ Built with:
 
 ## Status
 
-🚧 Work in progress. Core features are being actively developed.
+🚧 Development paused.
